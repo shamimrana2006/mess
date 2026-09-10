@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("MEMBER") // "MANAGER" or "MEMBER"
+  phone     String?
+  deposit   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  meals     Meal[]
+  bazars    Bazar[]
+}
+
+model Meal {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date          String   // Format: "YYYY-MM-DD"
+  breakfast     Float    @default(0)
+  lunch         Float    @default(0)
+  dinner        Float    @default(0)
+  total         Float    @default(0)
+  isLunchCooked Boolean  @default(false) // দুপুরের রান্না সম্পন্ন
+  isDinnerCooked Boolean @default(false) // রাতের রান্না সম্পন্ন
+  updatedTime   String?  // Timestamp e.g. "11 Sep, 08:30 PM"
+  isLocked      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+model DailyLock {
+  id             String   @id @default(cuid())
+  date           String   @unique // Format: "YYYY-MM-DD"
+  isLunchLocked  Boolean  @default(false)
+  isDinnerLocked Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Bazar {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String   // Format: "YYYY-MM-DD"
+  amount    Float
+  items     String   // e.g. "মাছ, শাকসবজি, তেল, মশলা"
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MessSettings {
+  id             String   @id @default("main_settings")
+  messName       String   @default("আমাদের মেস (Mess Calculation)")
+  isLunchLocked  Boolean  @default(false) // গ্লোবাল আজকের দুপুরের মিল লক
+  isDinnerLocked Boolean  @default(false) // গ্লোবাল আজকের রাতের মিল লক
+  lockPastDays   Boolean  @default(true)  // পূর্ববর্তী দিনের মিল লক
+  cutoffTime     String?  @default("10:00")
+  fixedCosts     Float    @default(0)     // খালার বিল, গ্যাস বিল
+  updatedAt      DateTime @updatedAt
+}
