@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { hashPassword, signJwtToken, setAuthCookie } from '@/lib/auth';
+import { hashPassword, signJwtToken, COOKIE_NAME } from '@/lib/auth';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
@@ -47,9 +49,7 @@ export async function POST(req: Request) {
       role: newUser.role,
     });
 
-    setAuthCookie(token);
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: {
         id: newUser.id,
@@ -60,8 +60,21 @@ export async function POST(req: Request) {
         deposit: newUser.deposit,
       },
     });
-  } catch (error) {
+
+    response.cookies.set(COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      path: '/',
+    });
+
+    return response;
+  } catch (error: any) {
     console.error('Registration error:', error);
-    return NextResponse.json({ error: 'রেজিস্ট্রেশন ব্যর্থ হয়েছে' }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে। ডাটাবেজ কানেকশন চেক করুন।' },
+      { status: 500 }
+    );
   }
 }

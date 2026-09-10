@@ -4,8 +4,8 @@ import { cookies } from 'next/headers';
 import { prisma } from './db';
 import { UserSession } from './types';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mess_calculation_default_secret_key_change_me';
-const COOKIE_NAME = 'mess_auth_token';
+export const JWT_SECRET = process.env.JWT_SECRET || 'mess_calculation_super_secret_jwt_key_2026_vercell_free';
+export const COOKIE_NAME = 'mess_auth_token';
 
 export async function hashPassword(password: string): Promise<string> {
   return await bcrypt.hash(password, 10);
@@ -54,29 +54,38 @@ export async function getCurrentUser(): Promise<UserSession | null> {
       ...user,
       role: user.role as 'MANAGER' | 'MEMBER',
     };
-  } catch {
+  } catch (err) {
+    console.error('Error getting current user:', err);
     return null;
   }
 }
 
 export function setAuthCookie(token: string) {
-  const cookieStore = cookies();
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-    path: '/',
-  });
+  try {
+    const cookieStore = cookies();
+    cookieStore.set(COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      path: '/',
+    });
+  } catch (err) {
+    console.error('Error setting cookie in store:', err);
+  }
 }
 
 export function removeAuthCookie() {
-  const cookieStore = cookies();
-  cookieStore.set(COOKIE_NAME, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 0,
-    path: '/',
-  });
+  try {
+    const cookieStore = cookies();
+    cookieStore.set(COOKIE_NAME, '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+    });
+  } catch (err) {
+    console.error('Error removing cookie:', err);
+  }
 }
