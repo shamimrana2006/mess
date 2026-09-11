@@ -48,62 +48,62 @@ export default function MemberMealList({
               className={`glass-card glass-card-hover rounded-2xl p-3.5 cursor-pointer border transition-all ${
                 isCurrentUser
                   ? 'border-emerald-500/40 bg-slate-900/90 shadow-md shadow-emerald-950/40'
-                  : 'border-slate-800 bg-slate-900/60'
+                  : 'border-slate-800/80 bg-slate-900/70'
               }`}
             >
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-3">
                 {/* Avatar & Name */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base shadow-inner ${
+                    className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-base shadow-md shrink-0 ${
                       member.role === 'MANAGER'
-                        ? 'bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950'
-                        : 'bg-gradient-to-tr from-emerald-600 to-teal-500 text-white'
+                        ? 'bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 shadow-amber-500/20'
+                        : 'bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 shadow-emerald-500/20'
                     }`}
                   >
                     {member.name.charAt(0)}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <h4 className="text-sm font-bold text-slate-100 truncate max-w-[130px]">
+                      <h4 className="text-sm font-bold text-white truncate">
                         {member.name}
                       </h4>
                       {isCurrentUser && (
-                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-semibold px-1.5 py-0.2 rounded">
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-1.5 py-0.5 rounded-md border border-emerald-500/30 shrink-0">
                           আপনি
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                    <div className="flex items-center gap-2 text-xs text-slate-400 mt-1 font-medium">
                       <span>
                         আজ: <strong className="text-slate-200">{toBanglaNumber(member.todayMeals)}</strong>
                       </span>
                       <span>•</span>
                       <span>
-                        মোট: <strong className="text-emerald-400 font-bold">{toBanglaNumber(member.totalMeals)}</strong> মিল
+                        মোট: <strong className="text-emerald-300 font-bold">{toBanglaNumber(member.totalMeals)}</strong> মিল
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Net Balance Pill */}
-                <div className="text-right">
-                  <div className="text-xs font-semibold">
+                <div className="text-right shrink-0">
+                  <div className="text-xs font-bold">
                     {isPositive ? (
-                      <span className="text-emerald-400 inline-flex items-center gap-0.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                        <ArrowUpRight className="w-3 h-3" /> পাবে {formatTaka(member.netBalance)}
+                      <span className="text-emerald-300 inline-flex items-center gap-0.5 bg-emerald-500/15 px-2.5 py-1 rounded-full border border-emerald-500/30 shadow-sm">
+                        <ArrowUpRight className="w-3.5 h-3.5" /> পাবে {formatTaka(member.netBalance)}
                       </span>
                     ) : isDue ? (
-                      <span className="text-rose-400 inline-flex items-center gap-0.5 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
-                        <ArrowDownRight className="w-3 h-3" /> দিবে {formatTaka(Math.abs(member.netBalance))}
+                      <span className="text-rose-300 inline-flex items-center gap-0.5 bg-rose-500/15 px-2.5 py-1 rounded-full border border-rose-500/30 shadow-sm">
+                        <ArrowDownRight className="w-3.5 h-3.5" /> দিবে {formatTaka(Math.abs(member.netBalance))}
                       </span>
                     ) : (
-                      <span className="text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full">
+                      <span className="text-slate-300 bg-slate-800 px-2.5 py-1 rounded-full font-medium border border-slate-700">
                         সমান
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-slate-400 mt-1 font-medium">
                     খরচ: {formatTaka(member.mealCost)}
                   </p>
                 </div>

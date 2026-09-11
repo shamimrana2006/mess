@@ -120,16 +120,16 @@ export default function BazarManager({
   return (
     <div className="space-y-4">
       {/* Header & Total Bazar Card */}
-      <div className="glass-card rounded-2xl p-4 border border-purple-500/30 bg-gradient-to-br from-purple-950/30 via-slate-900/80 to-slate-900">
+      <div className="glass-card rounded-2xl p-4 border border-purple-500/30 bg-gradient-to-br from-purple-950/30 via-slate-900/80 to-slate-900 shadow-lg">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
               <ShoppingCart className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-100">মেস বাজার হিসাব</h2>
-              <p className="text-[11px] text-slate-400">
-                {isManager ? 'দৈনিক বাজার ও খরচের তালিকা (ম্যানেজার কন্ট্রোল)' : 'দৈনিক বাজার ও খরচের তালিকা'}
+              <h2 className="text-sm font-bold text-white">মেস বাজার হিসাব</h2>
+              <p className="text-xs text-slate-400">
+                {isManager ? 'দৈনিক বাজার তালিকা (ম্যানেজার কন্ট্রোল)' : 'দৈনিক বাজার তালিকা'}
               </p>
             </div>
           </div>
@@ -137,20 +137,20 @@ export default function BazarManager({
           {isManager ? (
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-purple-600/30 active:scale-95"
+              className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-purple-600/30 active:scale-95"
             >
-              <Plus className="w-3.5 h-3.5" /> বাজার যোগ
+              <Plus className="w-4 h-4" /> বাজার যোগ
             </button>
           ) : (
-            <span className="text-[10px] bg-slate-800/80 text-purple-300 font-semibold px-2 py-1 rounded-lg border border-slate-700">
-              শুধুমাত্র দেখার অনুমতি
+            <span className="text-[11px] bg-slate-800/90 text-purple-300 font-semibold px-2.5 py-1 rounded-xl border border-slate-700/60">
+              দেখার অনুমতি
             </span>
           )}
         </div>
 
-        <div className="pt-2 border-t border-slate-800 flex items-baseline justify-between">
-          <span className="text-xs text-slate-400">চলতি মাসের মোট বাজার খরচ:</span>
-          <strong className="text-xl font-extrabold text-purple-300">
+        <div className="pt-2.5 border-t border-slate-800/80 flex items-baseline justify-between">
+          <span className="text-xs text-slate-400 font-medium">চলতি মাসের মোট বাজার খরচ:</span>
+          <strong className="text-2xl font-black text-purple-300 tracking-tight">
             {formatTaka(totalAmount)}
           </strong>
         </div>
@@ -159,9 +159,9 @@ export default function BazarManager({
       {/* Bazar Entries List */}
       <div className="space-y-2.5">
         {bazars.length === 0 ? (
-          <div className="glass-card rounded-2xl p-6 text-center text-slate-400">
-            <ShoppingCart className="w-8 h-8 mx-auto mb-2 text-slate-600" />
-            <p className="text-xs">এখনো কোনো বাজার খরচ এন্ট্রি করা হয়নি।</p>
+          <div className="glass-card rounded-2xl p-8 text-center text-slate-400 border border-slate-800">
+            <ShoppingCart className="w-10 h-10 mx-auto mb-2.5 text-slate-600 opacity-60" />
+            <p className="text-xs font-medium">এখনো কোনো বাজার খরচ এন্ট্রি করা হয়নি।</p>
           </div>
         ) : (
           bazars.map((bazar) => {
@@ -170,17 +170,17 @@ export default function BazarManager({
             return (
               <div
                 key={bazar.id}
-                className="glass-card rounded-2xl p-3.5 border border-slate-800 bg-slate-900/70 relative"
+                className="glass-card rounded-2xl p-3.5 border border-slate-800/80 bg-slate-900/75 relative shadow-sm"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
                     {/* Buyer & Date */}
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                       <span className="text-xs font-bold text-emerald-300">
                         {bazar.user.name}
                       </span>
-                      <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Calendar className="w-2.5 h-2.5" /> {bazar.date}
+                      <span className="text-[11px] bg-slate-800/90 text-slate-300 px-2 py-0.5 rounded-full flex items-center gap-1 font-medium border border-slate-700/50">
+                        <Calendar className="w-3 h-3 text-slate-400" /> {bazar.date}
                       </span>
                     </div>
 
@@ -198,17 +198,17 @@ export default function BazarManager({
                   </div>
 
                   {/* Amount & Delete */}
-                  <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
-                    <span className="text-sm font-extrabold text-purple-400">
+                  <div className="text-right shrink-0 flex flex-col items-end gap-2">
+                    <span className="text-sm font-black text-purple-300 font-mono tracking-tight">
                       {formatTaka(bazar.amount)}
                     </span>
                     {canDelete && (
                       <button
                         onClick={() => handleDeleteBazar(bazar.id)}
-                        className="w-6 h-6 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 flex items-center justify-center transition-all"
+                        className="w-7 h-7 rounded-lg bg-slate-800/90 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 flex items-center justify-center transition-all border border-slate-700/60 active:scale-90"
                         title="মুছে ফেলুন"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>

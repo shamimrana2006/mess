@@ -27,7 +27,8 @@ module.exports = {
         }
       },
       fontFamily: {
-        bangla: ['var(--font-bangla)', 'system-ui', 'sans-serif'],
+        bangla: ['var(--font-hind)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-inter)', 'var(--font-hind)', 'system-ui', 'sans-serif'],
       },
       animation: {
         'pulse-fast': 'pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite',

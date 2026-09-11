@@ -37,7 +37,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-800/90 py-1.5 px-3">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-800/90 py-2 px-3 shadow-2xl">
       <div className="max-w-md mx-auto flex items-center justify-around">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
@@ -47,22 +47,22 @@ export default function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all duration-200 ${
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all duration-200 ${
                 isActive
                   ? 'text-emerald-400 font-bold scale-105'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <div
-                className={`p-1.5 rounded-xl transition-all ${
+                className={`p-1.5 rounded-xl transition-all duration-200 ${
                   isActive
-                    ? 'bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                    : 'bg-transparent'
+                    ? 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.35)] border border-emerald-500/30'
+                    : 'bg-transparent text-slate-400'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
               </div>
-              <span className="text-[10px] mt-0.5 tracking-tight font-medium">
+              <span className={`text-[11px] mt-1 tracking-tight ${isActive ? 'font-bold text-emerald-300' : 'font-medium'}`}>
                 {item.label}
               </span>
             </Link>
