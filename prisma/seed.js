@@ -1,14 +1,40 @@
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL =
-    process.env.POSTGRES_PRISMA_URL ||
-    process.env.POSTGRES_URL ||
-    process.env.POSTGRES_URL_NON_POOLING;
+function getValidDatabaseUrl() {
+  const candidates = [
+    process.env.DATABASE_URL,
+    process.env.POSTGRES_PRISMA_URL,
+    process.env.POSTGRES_URL,
+    process.env.POSTGRES_URL_NON_POOLING,
+  ];
+
+  for (const candidate of candidates) {
+    if (
+      candidate &&
+      typeof candidate === 'string' &&
+      (candidate.startsWith('postgresql://') || candidate.startsWith('postgres://'))
+    ) {
+      return candidate.trim();
+    }
+  }
+  return undefined;
+}
+
+const resolvedDbUrl = getValidDatabaseUrl();
+if (resolvedDbUrl) {
+  process.env.DATABASE_URL = resolvedDbUrl;
 }
 
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: resolvedDbUrl
+    ? {
+        db: {
+          url: resolvedDbUrl,
+        },
+      }
+    : undefined,
+});
 
 async function main() {
   console.log('🧹 Resetting all data... Removing all members, meals, and bazars.');
