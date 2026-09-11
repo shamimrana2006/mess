@@ -12,7 +12,8 @@ function getValidDatabaseUrl(): string | undefined {
     if (
       candidate &&
       typeof candidate === 'string' &&
-      (candidate.startsWith('postgresql://') || candidate.startsWith('postgres://'))
+      candidate.trim().length > 0 &&
+      (candidate.trim().startsWith('postgresql://') || candidate.trim().startsWith('postgres://'))
     ) {
       return candidate.trim();
     }
@@ -24,6 +25,8 @@ const resolvedDbUrl = getValidDatabaseUrl();
 
 if (resolvedDbUrl) {
   process.env.DATABASE_URL = resolvedDbUrl;
+} else if (process.env.DATABASE_URL !== undefined && process.env.DATABASE_URL.trim() === '') {
+  delete process.env.DATABASE_URL;
 }
 
 const globalForPrisma = globalThis as unknown as {
@@ -44,5 +47,6 @@ export const prisma =
   });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
 
 
