@@ -55,6 +55,8 @@ export default function MealCalendar({
   
   // Day Edit Modal state
   const [activeDateStr, setActiveDateStr] = useState<string | null>(null);
+  const [dateMembersMeals, setDateMembersMeals] = useState<MealRecord[]>([]);
+  const [isLoadingDateMeals, setIsLoadingDateMeals] = useState<boolean>(false);
   const [activeMeal, setActiveMeal] = useState<{
     lunch: number;
     dinner: number;
@@ -92,7 +94,7 @@ export default function MealCalendar({
 
     try {
       setIsLoading(true);
-      // 1. Fetch meals
+      // 1. Fetch meals for active user
       const res = await fetch(`/api/meals?month=${monthPrefix}&userId=${targetId}`);
       const data = await res.json();
       if (data.meals) {
@@ -131,29 +133,47 @@ export default function MealCalendar({
     setCurrentDate(newDate);
   };
 
+  // Fetch all members' meals for the clicked date
+  const fetchDateAllMeals = async (targetDateStr: string, currentTargetUserId: string) => {
+    try {
+      setIsLoadingDateMeals(true);
+      const res = await fetch(`/api/meals?date=${targetDateStr}`);
+      const data = await res.json();
+      if (data.meals) {
+        setDateMembersMeals(data.meals);
+        const myMeal = data.meals.find((m: MealRecord) => m.userId === currentTargetUserId);
+        if (myMeal) {
+          setActiveMeal({
+            lunch: myMeal.lunch,
+            dinner: myMeal.dinner,
+            isLunchCooked: Boolean(myMeal.isLunchCooked),
+            isDinnerCooked: Boolean(myMeal.isDinnerCooked),
+            updatedTime: myMeal.updatedTime,
+          });
+        } else {
+          setActiveMeal({
+            lunch: 0,
+            dinner: 0,
+            isLunchCooked: false,
+            isDinnerCooked: false,
+            updatedTime: null,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load date meals', err);
+    } finally {
+      setIsLoadingDateMeals(false);
+    }
+  };
+
   const handleDayClick = (day: number) => {
     const dayFormatted = day.toString().padStart(2, '0');
     const targetDateStr = `${year}-${monthStr}-${dayFormatted}`;
     setActiveDateStr(targetDateStr);
 
-    const existingMeal = meals.find((m) => m.date === targetDateStr);
-    if (existingMeal) {
-      setActiveMeal({
-        lunch: existingMeal.lunch,
-        dinner: existingMeal.dinner,
-        isLunchCooked: Boolean(existingMeal.isLunchCooked),
-        isDinnerCooked: Boolean(existingMeal.isDinnerCooked),
-        updatedTime: existingMeal.updatedTime,
-      });
-    } else {
-      setActiveMeal({
-        lunch: 0,
-        dinner: 0,
-        isLunchCooked: false,
-        isDinnerCooked: false,
-        updatedTime: null,
-      });
-    }
+    const targetId = isManager ? selectedUserId : currentUser?.id || '';
+    fetchDateAllMeals(targetDateStr, targetId);
 
     // Load active date lock status
     const currentLock = dailyLocks[targetDateStr] || {
@@ -529,13 +549,97 @@ export default function MealCalendar({
             {/* Title */}
             <div className="mb-3">
               <span className="text-xs text-emerald-400 font-semibold uppercase tracking-wider">
-                {selectedMemberObj?.name || 'মেম্বার'}
+                {isManager ? 'তারিখের মোট মিল ও মেম্বার বিবরণ' : selectedMemberObj?.name || 'মেম্বার'}
               </span>
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 📅 {toBanglaNumber(activeDateStr.split('-')[2])}{' '}
                 {getBanglaMonthName(parseInt(activeDateStr.split('-')[1]) - 1)}{' '}
                 {toBanglaNumber(activeDateStr.split('-')[0])}
               </h3>
+            </div>
+
+            {/* 📊 মেসের মোট মিলের হিসাব (দুপুর ও রাত আলাদা আলাদা) */}
+            <div className="mb-4 p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-emerald-950/30 border border-emerald-500/30 space-y-3 shadow-lg">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 text-amber-400" /> এই দিনের মেসের মোট মিল
+                </span>
+                <span className="text-xs bg-emerald-500/20 text-emerald-300 font-black px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                  মোট: {isLoadingDateMeals ? '...' : toBanglaNumber(dateMembersMeals.reduce((acc, m) => acc + (m.lunch || 0) + (m.dinner || 0), 0))} টি
+                </span>
+              </div>
+
+              {/* 2 Big Stat Boxes: Lunch and Dinner */}
+              <div className="grid grid-cols-2 gap-2.5 text-center">
+                {/* ☀️ সবার মোট দুপুরের মিল */}
+                <div className="bg-slate-900/90 p-2.5 rounded-2xl border border-amber-500/30 flex flex-col items-center">
+                  <span className="text-[11px] text-amber-300 font-bold flex items-center gap-1">
+                    <Sun className="w-3.5 h-3.5 text-amber-400" /> সবার মোট দুপুর
+                  </span>
+                  <span className="text-2xl font-black text-white mt-1">
+                    {isLoadingDateMeals ? '...' : toBanglaNumber(dateMembersMeals.reduce((acc, m) => acc + (m.lunch || 0), 0))}
+                  </span>
+                  <span className="text-[10px] text-slate-400 mt-0.5">টি মিল হবে</span>
+                </div>
+
+                {/* 🌙 সবার মোট রাতের মিল */}
+                <div className="bg-slate-900/90 p-2.5 rounded-2xl border border-blue-500/30 flex flex-col items-center">
+                  <span className="text-[11px] text-blue-300 font-bold flex items-center gap-1">
+                    <Moon className="w-3.5 h-3.5 text-blue-400" /> সবার মোট রাত
+                  </span>
+                  <span className="text-2xl font-black text-white mt-1">
+                    {isLoadingDateMeals ? '...' : toBanglaNumber(dateMembersMeals.reduce((acc, m) => acc + (m.dinner || 0), 0))}
+                  </span>
+                  <span className="text-[10px] text-slate-400 mt-0.5">টি মিল হবে</span>
+                </div>
+              </div>
+
+              {/* 👥 মেম্বারদের তালিকা (কে কয়টা মিল দিয়েছে) */}
+              {isManager && allMembers.length > 0 && (
+                <div className="pt-2 border-t border-slate-800">
+                  <div className="flex items-center justify-between mb-1.5 text-[11px] font-semibold text-slate-400">
+                    <span>মেম্বারের নাম (ক্লিক করে এডিট)</span>
+                    <span>দুপুর | রাত | মোট</span>
+                  </div>
+                  <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                    {allMembers.map((member) => {
+                      const memberMeal = dateMembersMeals.find((m) => m.userId === member.id);
+                      const l = memberMeal?.lunch || 0;
+                      const d = memberMeal?.dinner || 0;
+                      const t = l + d;
+                      const isSelected = member.id === selectedUserId;
+
+                      return (
+                        <div
+                          key={member.id}
+                          onClick={() => {
+                            setSelectedUserId(member.id);
+                            setActiveMeal({
+                              lunch: l,
+                              dinner: d,
+                              isLunchCooked: Boolean(memberMeal?.isLunchCooked),
+                              isDinnerCooked: Boolean(memberMeal?.isDinnerCooked),
+                              updatedTime: memberMeal?.updatedTime || null,
+                            });
+                          }}
+                          className={`flex items-center justify-between p-2 rounded-xl text-xs transition-all cursor-pointer border ${
+                            isSelected
+                              ? 'bg-amber-500/20 border-amber-500/40 text-amber-200 shadow-sm'
+                              : 'bg-slate-900/60 hover:bg-slate-800 border-slate-800 text-slate-300'
+                          }`}
+                        >
+                          <span className="font-semibold truncate max-w-[130px]">
+                            {member.name} {isSelected && <span className="text-[10px] text-amber-400 font-bold ml-1">✓</span>}
+                          </span>
+                          <span className="font-mono text-xs">
+                            ☀️ <strong className="text-amber-300 font-bold">{toBanglaNumber(l)}</strong> | 🌙 <strong className="text-blue-300 font-bold">{toBanglaNumber(d)}</strong> = <strong className="text-emerald-400 font-black">{toBanglaNumber(t)}</strong>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 👑 MANAGER SPECIFIC: PER-DATE LOCK & COOKED BUTTONS */}

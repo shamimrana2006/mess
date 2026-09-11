@@ -128,16 +128,24 @@ export default function BazarManager({
             </div>
             <div>
               <h2 className="text-sm font-bold text-slate-100">মেস বাজার হিসাব</h2>
-              <p className="text-[11px] text-slate-400">দৈনিক বাজার ও খরচের তালিকা</p>
+              <p className="text-[11px] text-slate-400">
+                {isManager ? 'দৈনিক বাজার ও খরচের তালিকা (ম্যানেজার কন্ট্রোল)' : 'দৈনিক বাজার ও খরচের তালিকা'}
+              </p>
             </div>
           </div>
 
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-purple-600/30 active:scale-95"
-          >
-            <Plus className="w-3.5 h-3.5" /> বাজার যোগ
-          </button>
+          {isManager ? (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-purple-600/30 active:scale-95"
+            >
+              <Plus className="w-3.5 h-3.5" /> বাজার যোগ
+            </button>
+          ) : (
+            <span className="text-[10px] bg-slate-800/80 text-purple-300 font-semibold px-2 py-1 rounded-lg border border-slate-700">
+              শুধুমাত্র দেখার অনুমতি
+            </span>
+          )}
         </div>
 
         <div className="pt-2 border-t border-slate-800 flex items-baseline justify-between">
@@ -157,7 +165,7 @@ export default function BazarManager({
           </div>
         ) : (
           bazars.map((bazar) => {
-            const canDelete = isManager || currentUser?.id === bazar.userId;
+            const canDelete = isManager;
 
             return (
               <div

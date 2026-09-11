@@ -40,13 +40,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'অনুগ্রহ করে প্রথমে লগইন করুন' }, { status: 401 });
     }
 
+    // USER REQUIREMENT: Only manager can add or update bazar
+    if (currentUser.role !== 'MANAGER') {
+      return NextResponse.json({ error: 'শুধুমাত্র ম্যানেজার বাজার খরচ যোগ করতে পারবেন' }, { status: 403 });
+    }
+
     const { targetUserId, date, amount, items, notes } = await req.json();
 
     if (!date || !amount || !items) {
       return NextResponse.json({ error: 'তারিখ, টাকার পরিমাণ এবং পণ্যের নাম দিন' }, { status: 400 });
     }
 
-    const userId = (currentUser.role === 'MANAGER' && targetUserId) ? targetUserId : currentUser.id;
+    const userId = targetUserId || currentUser.id;
 
     const bazar = await prisma.bazar.create({
       data: {
@@ -81,6 +86,11 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'লগইন প্রয়োজন' }, { status: 401 });
     }
 
+    // USER REQUIREMENT: Only manager can delete bazar
+    if (currentUser.role !== 'MANAGER') {
+      return NextResponse.json({ error: 'শুধুমাত্র ম্যানেজার বাজার খরচ মুছে ফেলতে পারবেন' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
@@ -94,11 +104,6 @@ export async function DELETE(req: Request) {
 
     if (!item) {
       return NextResponse.json({ error: 'বাজার এন্ট্রি পাওয়া যায়নি' }, { status: 404 });
-    }
-
-    // Only manager or the member who logged it can delete
-    if (currentUser.role !== 'MANAGER' && item.userId !== currentUser.id) {
-      return NextResponse.json({ error: 'মুছে ফেলার অনুমতি নেই' }, { status: 403 });
     }
 
     await prisma.bazar.delete({
