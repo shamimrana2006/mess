@@ -1,19 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { getBangladeshDateTime } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const now = new Date();
-    const year = searchParams.get('year') || now.getFullYear().toString();
-    const month = searchParams.get('month') || (now.getMonth() + 1).toString().padStart(2, '0');
+    const bdTime = getBangladeshDateTime();
+    const year = searchParams.get('year') || bdTime.year.toString();
+    const month = searchParams.get('month') || bdTime.month.toString().padStart(2, '0');
     const monthPrefix = `${year}-${month}`;
-
-    const todayDay = now.getDate().toString().padStart(2, '0');
-    const todayDate = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${todayDay}`;
+    const todayDate = bdTime.dateStr;
 
     // Get or create mess settings
     let settings = await prisma.messSettings.findUnique({

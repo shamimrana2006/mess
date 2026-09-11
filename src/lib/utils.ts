@@ -21,17 +21,63 @@ export function formatTaka(amount: number): string {
   return `${isNegative ? '-' : ''}৳ ${formatted}`;
 }
 
-// Format timestamp: e.g. "11 Sep, 08:30 PM" or "১১ সেপ্টেম্বর, রাত ০৮:৩০"
+// Get Date & Time in Bangladesh Timezone (Asia/Dhaka, UTC+6)
+export function getBangladeshDateTime(date = new Date()): {
+  year: number;
+  month: number; // 1-12
+  day: number; // 1-31
+  hours: number; // 0-23
+  minutes: number; // 0-59
+  seconds: number; // 0-59
+  dateStr: string; // YYYY-MM-DD
+  monthStr: string; // YYYY-MM
+} {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Dhaka',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  const parts = dtf.formatToParts(date);
+  const getPart = (type: string) => parts.find((p) => p.type === type)?.value || '00';
+
+  const year = parseInt(getPart('year'), 10);
+  const month = parseInt(getPart('month'), 10);
+  const day = parseInt(getPart('day'), 10);
+  let hours = parseInt(getPart('hour'), 10);
+  if (hours === 24) hours = 0;
+  const minutes = parseInt(getPart('minute'), 10);
+  const seconds = parseInt(getPart('second'), 10);
+
+  const monthPadded = month.toString().padStart(2, '0');
+  const dayPadded = day.toString().padStart(2, '0');
+
+  return {
+    year,
+    month,
+    day,
+    hours,
+    minutes,
+    seconds,
+    dateStr: `${year}-${monthPadded}-${dayPadded}`,
+    monthStr: `${year}-${monthPadded}`,
+  };
+}
+
+// Format timestamp strictly in Bangladesh Time (Asia/Dhaka): e.g. "১১ সেপ্টেম্বর, রাত ০৮:৩০"
 export function getFormattedBanglaTimestamp(dateObj = new Date()): string {
   const monthsBn = [
     'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
     'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
   ];
   
-  const day = dateObj.getDate();
-  const month = monthsBn[dateObj.getMonth()];
-  let hours = dateObj.getHours();
-  const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+  const { month, day, hours, minutes } = getBangladeshDateTime(dateObj);
+  const monthName = monthsBn[month - 1] || '';
   
   let period = 'সকাল';
   if (hours >= 12 && hours < 15) period = 'দুপুর';
@@ -40,16 +86,13 @@ export function getFormattedBanglaTimestamp(dateObj = new Date()): string {
   else if (hours >= 20 || hours < 6) period = 'রাত';
 
   const hour12 = hours % 12 || 12;
-  return `${toBanglaNumber(day)} ${month}, ${period} ${toBanglaNumber(hour12)}:${toBanglaNumber(minutes)}`;
+  const minPadded = minutes.toString().padStart(2, '0');
+  return `${toBanglaNumber(day)} ${monthName}, ${period} ${toBanglaNumber(hour12)}:${toBanglaNumber(minPadded)}`;
 }
 
-// Format Date string YYYY-MM-DD
+// Format Date string YYYY-MM-DD in Bangladesh Time
 export function getTodayDateString(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = (now.getMonth() + 1).toString().padStart(2, '0');
-  const day = now.getDate().toString().padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return getBangladeshDateTime().dateStr;
 }
 
 // Get Bengali Month Name

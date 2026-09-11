@@ -22,6 +22,7 @@ import {
   toBanglaNumber,
   getTodayDateString,
   getBanglaMonthName,
+  getBangladeshDateTime,
 } from '@/lib/utils';
 import { UserSession, MealRecord, MemberSummary } from '@/lib/types';
 
@@ -46,8 +47,9 @@ export default function MealCalendar({
   isDinnerLocked: defaultDinnerLocked,
   lockPastDays = true,
 }: MealCalendarProps) {
-  const todayStr = getTodayDateString();
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const bdNow = getBangladeshDateTime();
+  const todayStr = bdNow.dateStr;
+  const [currentDate, setCurrentDate] = useState(() => new Date(bdNow.year, bdNow.month - 1, bdNow.day));
   const [selectedUserId, setSelectedUserId] = useState<string>(currentUser?.id || '');
   const [meals, setMeals] = useState<MealRecord[]>([]);
   const [dailyLocks, setDailyLocks] = useState<Record<string, { isLunchLocked: boolean; isDinnerLocked: boolean }>>({});
@@ -400,8 +402,11 @@ export default function MealCalendar({
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setCurrentDate(new Date())}
-              className="px-2 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+              onClick={() => {
+                const now = getBangladeshDateTime();
+                setCurrentDate(new Date(now.year, now.month - 1, now.day));
+              }}
+              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all border border-slate-700/60 active:scale-95"
             >
               আজ
             </button>
