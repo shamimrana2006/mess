@@ -24,8 +24,8 @@ export default function TodayQuickAction({
   onMealUpdated,
 }: TodayQuickActionProps) {
   const todayStr = getTodayDateString();
-  const [lunch, setLunch] = useState<number>(1);
-  const [dinner, setDinner] = useState<number>(1);
+  const [lunch, setLunch] = useState<number>(0);
+  const [dinner, setDinner] = useState<number>(0);
   const [isLunchCooked, setIsLunchCooked] = useState<boolean>(false);
   const [isDinnerCooked, setIsDinnerCooked] = useState<boolean>(false);
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
@@ -52,11 +52,17 @@ export default function TodayQuickAction({
 
         if (data.meals && data.meals.length > 0) {
           const m = data.meals[0];
-          setLunch(m.lunch || 0);
-          setDinner(m.dinner || 0);
+          setLunch(m.lunch !== undefined ? m.lunch : 0);
+          setDinner(m.dinner !== undefined ? m.dinner : 0);
           setIsLunchCooked(Boolean(m.isLunchCooked));
           setIsDinnerCooked(Boolean(m.isDinnerCooked));
           setLastSavedTime(m.updatedTime || null);
+        } else {
+          setLunch(0);
+          setDinner(0);
+          setIsLunchCooked(false);
+          setIsDinnerCooked(false);
+          setLastSavedTime(null);
         }
       } catch (err) {
         console.error('Failed to load today meal', err);
@@ -201,19 +207,23 @@ export default function TodayQuickAction({
           </div>
 
           <span className="text-2xl font-black text-white my-1">
-            {toBanglaNumber(lunch)}
+            {isLoading ? (
+              <span className="animate-pulse text-slate-500 text-lg">...</span>
+            ) : (
+              toBanglaNumber(lunch)
+            )}
           </span>
 
           <div className="flex items-center gap-2 w-full justify-center mt-1">
             <button
-              disabled={isLunchDisabled || lunch <= 0 || isSaving}
+              disabled={isLoading || isLunchDisabled || lunch <= 0 || isSaving}
               onClick={() => updateMealCount('lunch', -1)}
               className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-slate-200 transition-all active:scale-90"
             >
               <Minus className="w-4 h-4" />
             </button>
             <button
-              disabled={isLunchDisabled || isSaving}
+              disabled={isLoading || isLunchDisabled || isSaving}
               onClick={() => updateMealCount('lunch', 1)}
               className="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-white transition-all active:scale-90 shadow-md shadow-emerald-600/30"
             >
@@ -243,19 +253,23 @@ export default function TodayQuickAction({
           </div>
 
           <span className="text-2xl font-black text-white my-1">
-            {toBanglaNumber(dinner)}
+            {isLoading ? (
+              <span className="animate-pulse text-slate-500 text-lg">...</span>
+            ) : (
+              toBanglaNumber(dinner)
+            )}
           </span>
 
           <div className="flex items-center gap-2 w-full justify-center mt-1">
             <button
-              disabled={isDinnerDisabled || dinner <= 0 || isSaving}
+              disabled={isLoading || isDinnerDisabled || dinner <= 0 || isSaving}
               onClick={() => updateMealCount('dinner', -1)}
               className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-slate-200 transition-all active:scale-90"
             >
               <Minus className="w-4 h-4" />
             </button>
             <button
-              disabled={isDinnerDisabled || isSaving}
+              disabled={isLoading || isDinnerDisabled || isSaving}
               onClick={() => updateMealCount('dinner', 1)}
               className="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-white transition-all active:scale-90 shadow-md shadow-emerald-600/30"
             >

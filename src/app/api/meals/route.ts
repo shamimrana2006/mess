@@ -77,25 +77,26 @@ export async function POST(req: Request) {
       where: { userId_date: { userId, date } },
     });
 
-    const l = Math.max(0, Number(lunch) || 0);
-    const d = Math.max(0, Number(dinner) || 0);
+    const isDateLunchLocked = Boolean(dailyLock?.isLunchLocked || (date === today && settings?.isLunchLocked));
+    const isDateDinnerLocked = Boolean(dailyLock?.isDinnerLocked || (date === today && settings?.isDinnerLocked));
+
+    const isLunchCooked = Boolean(existingMeal?.isLunchCooked);
+    const isDinnerCooked = Boolean(existingMeal?.isDinnerCooked);
 
     // 2. CRITICAL RULE: "manager ranna hoyejaoya mill o edit korte parbena"
     // If lunch/dinner is marked as COOKED, NOBODY (including manager) can edit it!
-    if (existingMeal) {
-      if (existingMeal.isLunchCooked && existingMeal.lunch !== l) {
-        return NextResponse.json(
-          { error: '🛑 দুপুরের রান্না সম্পন্ন হয়ে গেছে! রান্না হয়ে যাওয়া মিল ম্যানেজার সহ কেউ পরিবর্তন করতে পারবে না।' },
-          { status: 403 }
-        );
-      }
+    if (isLunchCooked && lunch !== undefined && lunch !== (existingMeal?.lunch ?? 0)) {
+      return NextResponse.json(
+        { error: '🛑 দুপুরের রান্না সম্পন্ন হয়ে গেছে! রান্না হয়ে যাওয়া মিল ম্যানেজার সহ কেউ পরিবর্তন করতে পারবে না।' },
+        { status: 403 }
+      );
+    }
 
-      if (existingMeal.isDinnerCooked && existingMeal.dinner !== d) {
-        return NextResponse.json(
-          { error: '🛑 রাতের রান্না সম্পন্ন হয়ে গেছে! রান্না হয়ে যাওয়া মিল ম্যানেজার সহ কেউ পরিবর্তন করতে পারবে না।' },
-          { status: 403 }
-        );
-      }
+    if (isDinnerCooked && dinner !== undefined && dinner !== (existingMeal?.dinner ?? 0)) {
+      return NextResponse.json(
+        { error: '🛑 রাতের রান্না সম্পন্ন হয়ে গেছে! রান্না হয়ে যাওয়া মিল ম্যানেজার সহ কেউ পরিবর্তন করতে পারবে না।' },
+        { status: 403 }
+      );
     }
 
     // 3. Normal member locking rules (per-date lock or today lock or past days)
@@ -109,17 +110,14 @@ export async function POST(req: Request) {
       }
 
       // Check per-date locks
-      const isDateLunchLocked = Boolean(dailyLock?.isLunchLocked || (date === today && settings?.isLunchLocked));
-      const isDateDinnerLocked = Boolean(dailyLock?.isDinnerLocked || (date === today && settings?.isDinnerLocked));
-
-      if (isDateLunchLocked && existingMeal && existingMeal.lunch !== l) {
+      if (isDateLunchLocked && lunch !== undefined && lunch !== (existingMeal?.lunch ?? 0)) {
         return NextResponse.json(
           { error: '🔒 এই তারিখের দুপুরের মিল ম্যানেজার লক করে রেখেছেন' },
           { status: 403 }
         );
       }
 
-      if (isDateDinnerLocked && existingMeal && existingMeal.dinner !== d) {
+      if (isDateDinnerLocked && dinner !== undefined && dinner !== (existingMeal?.dinner ?? 0)) {
         return NextResponse.json(
           { error: '🔒 এই তারিখের রাতের মিল ম্যানেজার লক করে রেখেছেন' },
           { status: 403 }
@@ -127,7 +125,22 @@ export async function POST(req: Request) {
       }
     }
 
-    const total = l + d;
+    // 4. Calculate final values strictly preserving locked/cooked fields if not authorized
+    let finalLunch = existingMeal ? existingMeal.lunch : 0;
+    if (lunch !== undefined) {
+      if (!isLunchCooked && (isManager || !isDateLunchLocked)) {
+        finalLunch = Math.max(0, Number(lunch) || 0);
+      }
+    }
+
+    let finalDinner = existingMeal ? existingMeal.dinner : 0;
+    if (dinner !== undefined) {
+      if (!isDinnerCooked && (isManager || !isDateDinnerLocked)) {
+        finalDinner = Math.max(0, Number(dinner) || 0);
+      }
+    }
+
+    const total = finalLunch + finalDinner;
     const updatedTime = getFormattedBanglaTimestamp();
 
     const meal = await prisma.meal.upsert({
@@ -139,8 +152,8 @@ export async function POST(req: Request) {
       },
       update: {
         breakfast: 0,
-        lunch: l,
-        dinner: d,
+        lunch: finalLunch,
+        dinner: finalDinner,
         total,
         updatedTime,
       },
@@ -148,8 +161,8 @@ export async function POST(req: Request) {
         userId,
         date,
         breakfast: 0,
-        lunch: l,
-        dinner: d,
+        lunch: finalLunch,
+        dinner: finalDinner,
         total,
         isLunchCooked: false,
         isDinnerCooked: false,

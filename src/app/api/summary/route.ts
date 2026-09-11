@@ -34,6 +34,14 @@ export async function GET(req: Request) {
       });
     }
 
+    // Check today's date lock in DailyLock table
+    const todayDailyLock = await prisma.dailyLock.findUnique({
+      where: { date: todayDate },
+    });
+
+    const isTodayLunchLocked = Boolean(todayDailyLock?.isLunchLocked || settings.isLunchLocked);
+    const isTodayDinnerLocked = Boolean(todayDailyLock?.isDinnerLocked || settings.isDinnerLocked);
+
     // Get all users
     const users = await prisma.user.findMany({
       orderBy: { role: 'asc' },
@@ -135,8 +143,8 @@ export async function GET(req: Request) {
     return NextResponse.json({
       settings: {
         messName: settings.messName,
-        isLunchLocked: settings.isLunchLocked,
-        isDinnerLocked: settings.isDinnerLocked,
+        isLunchLocked: isTodayLunchLocked,
+        isDinnerLocked: isTodayDinnerLocked,
         lockPastDays: settings.lockPastDays,
         cutoffTime: settings.cutoffTime,
         fixedCosts: settings.fixedCosts,
