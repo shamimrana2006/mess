@@ -78,14 +78,20 @@ export default function Navbar({
                 </p>
                 <span
                   className={`text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1 mt-0.5 ${
-                    user.role === 'MANAGER'
+                    user.role === 'ADMIN'
+                      ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                      : user.role === 'MANAGER'
                       ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                       : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                   }`}
                 >
-                  {user.role === 'MANAGER' ? (
+                  {user.role === 'ADMIN' ? (
                     <>
-                      <ShieldCheck className="w-3 h-3" /> ম্যানেজার
+                      <ShieldCheck className="w-3 h-3 text-purple-400" /> সুপার এডমিন
+                    </>
+                  ) : user.role === 'MANAGER' ? (
+                    <>
+                      <ShieldCheck className="w-3 h-3 text-amber-400" /> ম্যানেজার
                     </>
                   ) : (
                     <>

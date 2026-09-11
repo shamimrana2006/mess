@@ -53,7 +53,7 @@ export async function getCurrentUser(): Promise<UserSession | null> {
 
     return {
       ...user,
-      role: user.role as 'MANAGER' | 'MEMBER',
+      role: user.role as 'ADMIN' | 'MANAGER' | 'MEMBER',
       status: (user.status || 'PENDING') as 'APPROVED' | 'PENDING' | 'REJECTED',
     };
   } catch (err) {

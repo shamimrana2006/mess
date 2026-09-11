@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import BanglaLoader from '@/components/BanglaLoader';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
-import { Settings, User, Phone, Lock, Save, CheckCircle2, AlertCircle, Sun, Moon, Flame, ShieldCheck } from 'lucide-react';
+import { Settings, User, Phone, Lock, Save, CheckCircle2, AlertCircle, Sun, Moon, Flame, ShieldCheck, ShieldAlert, RotateCcw, Trash2 } from 'lucide-react';
 import { UserSession, MessDashboardData } from '@/lib/types';
 import { formatTaka } from '@/lib/utils';
 
@@ -34,7 +34,14 @@ export default function SettingsPage() {
   const [isSavingMessSettings, setIsSavingMessSettings] = useState(false);
   const [messSettingsSuccess, setMessSettingsSuccess] = useState(false);
 
-  const isManager = currentUser?.role === 'MANAGER';
+  const isManager = currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN';
+  const isAdmin = currentUser?.role === 'ADMIN';
+
+  // Admin Reset State
+  const [resetModalAction, setResetModalAction] = useState<'reset_meals_bazar' | 'full_reset' | 'reset_month' | null>(null);
+  const [resetConfirmInput, setResetConfirmInput] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetFeedback, setResetFeedback] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const loadData = async () => {
     try {
@@ -148,6 +155,46 @@ export default function SettingsPage() {
       alert('সমস্যা হয়েছে');
     } finally {
       setIsSavingMessSettings(false);
+    }
+  };
+
+  // 3. Handle Super Admin Data Reset
+  const handleExecuteAdminReset = async () => {
+    if (!resetModalAction) return;
+
+    if (resetModalAction === 'full_reset' && resetConfirmInput.trim().toUpperCase() !== 'RESET') {
+      alert('সতর্কতা: সম্পূর্ণ রিসেট করতে ইংরেজি বড় হাতের অক্ষরে "RESET" লিখুন।');
+      return;
+    }
+
+    try {
+      setIsResetting(true);
+      setResetFeedback(null);
+
+      const currentMonthStr = dashboardData?.todayDate?.slice(0, 7);
+
+      const res = await fetch('/api/admin/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: resetModalAction,
+          month: currentMonthStr,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'ডাটা রিসেট ব্যর্থ হয়েছে');
+      }
+
+      setResetFeedback({ text: data.message || 'ডাটা রিসেট সম্পন্ন হয়েছে!', type: 'success' });
+      setResetModalAction(null);
+      setResetConfirmInput('');
+      loadData();
+    } catch (err: any) {
+      setResetFeedback({ text: err.message || 'সমস্যা হয়েছে', type: 'error' });
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -398,6 +445,174 @@ export default function SettingsPage() {
             </form>
           )}
         </div>
+
+        {/* CARD 3: সুপার এডমিন ডেটা রিসেট জোন (ADMIN ONLY) */}
+        {isAdmin && (
+          <div className="glass-card rounded-2xl p-4 border border-purple-500/40 bg-gradient-to-br from-purple-950/30 via-slate-900/90 to-slate-900 shadow-xl space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
+                <ShieldAlert className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-white flex items-center gap-1.5">
+                  <span>সুপার এডমিন কন্ট্রোল ও রিসেট প্যানেল</span>
+                  <span className="text-[10px] bg-purple-500/20 text-purple-300 font-bold px-1.5 py-0.2 rounded-full border border-purple-500/40">
+                    ADMIN ONLY
+                  </span>
+                </h2>
+                <p className="text-[11px] text-slate-400">মেসের ডেটা আংশিক বা সম্পূর্ণ ফ্যাক্টরি রিসেট করুন</p>
+              </div>
+            </div>
+
+            {resetFeedback && (
+              <div
+                className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                  resetFeedback.type === 'success'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                }`}
+              >
+                {resetFeedback.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                )}
+                <span>{resetFeedback.text}</span>
+              </div>
+            )}
+
+            <div className="space-y-2.5 pt-1">
+              {/* Option 1: Reset Meals & Bazar only */}
+              <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-200">সব মিল ও বাজার খরচ রিসেট</h4>
+                  <p className="text-[10px] text-slate-400">সকল মিল ও বাজার ডিলিট হবে, মেম্বার অ্যাকাউন্ট অক্ষত থাকবে</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setResetModalAction('reset_meals_bazar');
+                    setResetConfirmInput('');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1 shrink-0 transition-all active:scale-95"
+                >
+                  <RotateCcw className="w-3 h-3" /> রিসেট
+                </button>
+              </div>
+
+              {/* Option 2: Reset current month only */}
+              <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-200">চলতি মাসের হিসাব রিসেট</h4>
+                  <p className="text-[10px] text-slate-400">শুধুমাত্র বর্তমান মাসের মিল ও বাজার খরচ শূন্য হবে</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setResetModalAction('reset_month');
+                    setResetConfirmInput('');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 text-xs font-bold flex items-center gap-1 shrink-0 transition-all active:scale-95"
+                >
+                  <RotateCcw className="w-3 h-3" /> মাস রিসেট
+                </button>
+              </div>
+
+              {/* Option 3: Full Factory Reset */}
+              <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-500/30 flex items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-xs font-bold text-rose-300">সম্পূর্ণ মেস সিস্টেম ফ্যাক্টরি রিসেট</h4>
+                  <p className="text-[10px] text-rose-400/80">সকল মিল, বাজার ও জমা শূন্য হয়ে ফ্রেশ শুরু হবে</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setResetModalAction('full_reset');
+                    setResetConfirmInput('');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1 shrink-0 transition-all shadow-md shadow-rose-600/30 active:scale-95"
+                >
+                  <Trash2 className="w-3 h-3" /> ফুল রিসেট
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ADMIN RESET CONFIRMATION MODAL */}
+        {resetModalAction && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
+            <div className="glass-panel w-full max-w-sm rounded-3xl p-5 border border-rose-500/40 shadow-2xl relative space-y-4">
+              <button
+                onClick={() => {
+                  setResetModalAction(null);
+                  setResetConfirmInput('');
+                }}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center"
+              >
+                ✕
+              </button>
+
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30">
+                  <ShieldAlert className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {resetModalAction === 'full_reset'
+                      ? '⚠️ সম্পূর্ণ সিস্টেম রিসেট নিশ্চিতকরণ'
+                      : resetModalAction === 'reset_month'
+                      ? '⚠️ চলতি মাস রিসেট নিশ্চিতকরণ'
+                      : '⚠️ মিল ও বাজার হিসাব রিসেট নিশ্চিতকরণ'}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">এই পরিবর্তনটি আর পূর্বাবস্থায় ফেরানো যাবে না</p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 space-y-1.5">
+                {resetModalAction === 'full_reset' ? (
+                  <>
+                    <p className="text-rose-300 font-bold">💥 আপনি সম্পূর্ণ সিস্টেম ফ্যাক্টরি রিসেট করতে যাচ্ছেন!</p>
+                    <p>সকল মিল রেকর্ড, বাজার খরচ এবং জমা শূন্য হয়ে যাবে।</p>
+                    <p className="pt-2 text-slate-400">নিশ্চিত করতে নিচে ইংরেজি বড় অক্ষরে <strong className="text-rose-400 font-mono">RESET</strong> টাইপ করুন:</p>
+                  </>
+                ) : resetModalAction === 'reset_month' ? (
+                  <p>চলতি মাসের সকল মিল ও বাজারের হিসাব শূন্য হয়ে যাবে। আপনি কি নিশ্চিত?</p>
+                ) : (
+                  <p>সকল মিল ও বাজারের খরচ মুছে ফেলা হবে। মেম্বার অ্যাকাউন্ট অপরিবর্তিত থাকবে। আপনি কি নিশ্চিত?</p>
+                )}
+              </div>
+
+              {resetModalAction === 'full_reset' && (
+                <input
+                  type="text"
+                  placeholder='RESET টাইপ করুন'
+                  value={resetConfirmInput}
+                  onChange={(e) => setResetConfirmInput(e.target.value)}
+                  className="w-full bg-slate-900 border border-rose-500/40 rounded-xl px-3 py-2 text-center text-sm font-mono tracking-widest text-rose-300 uppercase focus:outline-none focus:border-rose-400"
+                />
+              )}
+
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetModalAction(null);
+                    setResetConfirmInput('');
+                  }}
+                  className="w-1/2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="button"
+                  disabled={isResetting || (resetModalAction === 'full_reset' && resetConfirmInput.trim().toUpperCase() !== 'RESET')}
+                  onClick={handleExecuteAdminReset}
+                  className="w-1/2 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-600/30 disabled:opacity-40 transition-all"
+                >
+                  {isResetting ? 'রিসেট হচ্ছে...' : 'হ্যাঁ, রিসেট করুন'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       <BottomNav />

@@ -46,8 +46,12 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoLogin = (role: 'manager' | 'member') => {
-    if (role === 'manager') {
+  const handleDemoLogin = (role: 'admin' | 'manager' | 'member') => {
+    if (role === 'admin') {
+      setEmail('admin@mess.com');
+      setPassword('123456');
+      handleLogin(undefined, 'admin@mess.com', '123456');
+    } else if (role === 'manager') {
       setEmail('manager@mess.com');
       setPassword('123456');
       handleLogin(undefined, 'manager@mess.com', '123456');
@@ -130,18 +134,27 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Quick Manager Login */}
-        <div className="mt-6 pt-5 border-t border-slate-800">
-          <p className="text-[11px] text-slate-400 text-center mb-3 font-medium">
-            বা দ্রুত ম্যানেজার একাউন্টে প্রবেশ করুন:
+        {/* Quick Admin & Manager Login */}
+        <div className="mt-6 pt-5 border-t border-slate-800 space-y-2">
+          <p className="text-[11px] text-slate-400 text-center mb-2.5 font-medium">
+            বা দ্রুত এডমিন / ম্যানেজার একাউন্টে প্রবেশ করুন:
           </p>
-          <button
-            onClick={() => handleDemoLogin('manager')}
-            disabled={isLoading}
-            className="w-full p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
-          >
-            <ShieldCheck className="w-4 h-4" /> ম্যানেজার লগইন (manager@mess.com)
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => handleDemoLogin('admin')}
+              disabled={isLoading}
+              className="p-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
+            >
+              <ShieldCheck className="w-4 h-4 text-purple-400" /> সুপার এডমিন
+            </button>
+            <button
+              onClick={() => handleDemoLogin('manager')}
+              disabled={isLoading}
+              className="p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
+            >
+              <ShieldCheck className="w-4 h-4 text-amber-400" /> ম্যানেজার
+            </button>
+          </div>
         </div>
 
         {/* Register Link */}

@@ -16,7 +16,8 @@ export default function MemberManager({
   members: propMembers,
   onRefresh,
 }: MemberManagerProps) {
-  const isManager = currentUser?.role === 'MANAGER';
+  const isManager = currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN';
+  const isAdmin = currentUser?.role === 'ADMIN';
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [activeTab, setActiveTab] = useState<'approved' | 'pending'>('approved');
@@ -27,7 +28,7 @@ export default function MemberManager({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<'MEMBER' | 'MANAGER'>('MEMBER');
+  const [role, setRole] = useState<'MEMBER' | 'MANAGER' | 'ADMIN'>('MEMBER');
   const [deposit, setDeposit] = useState('0');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -81,6 +82,36 @@ export default function MemberManager({
       onRefresh();
     } catch (err: any) {
       alert(err.message || 'অনুমোদন করতে সমস্যা হয়েছে');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleChangeRole = async (id: string, memberName: string, newRole: 'MEMBER' | 'MANAGER' | 'ADMIN') => {
+    const roleBangla = newRole === 'ADMIN' ? 'সুপার এডমিন' : newRole === 'MANAGER' ? 'ম্যানেজার' : 'সাধারণ মেম্বার';
+    if (!confirm(`আপনি কি "${memberName}" কে ${roleBangla} বানাতে চান?`)) {
+      return;
+    }
+
+    try {
+      setActionLoadingId(id);
+      const res = await fetch('/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          role: newRole,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'রোল পরিবর্তন ব্যর্থ হয়েছে');
+
+      alert(data.message || `সফলভাবে ${roleBangla} বানানো হয়েছে!`);
+      fetchAllUsers();
+      onRefresh();
+    } catch (err: any) {
+      alert(err.message || 'সমস্যা হয়েছে');
     } finally {
       setActionLoadingId(null);
     }
@@ -339,26 +370,30 @@ export default function MemberManager({
                   <div className="flex items-start gap-3">
                     <div
                       className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base shrink-0 ${
-                        member.role === 'MANAGER'
-                          ? 'bg-amber-500 text-slate-950'
+                        member.role === 'ADMIN'
+                          ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                          : member.role === 'MANAGER'
+                          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30'
                           : 'bg-emerald-600 text-white'
                       }`}
                     >
                       {member.name.charAt(0)}
                     </div>
                     <div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <h4 className="text-sm font-bold text-slate-100">
                           {member.name}
                         </h4>
                         <span
-                          className={`text-[10px] font-semibold px-1.5 py-0.2 rounded-full inline-flex items-center gap-0.5 ${
-                            member.role === 'MANAGER'
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-0.5 ${
+                            member.role === 'ADMIN'
+                              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                              : member.role === 'MANAGER'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                               : 'bg-slate-800 text-slate-300'
                           }`}
                         >
-                          {member.role === 'MANAGER' ? 'ম্যানেজার' : 'মেম্বার'}
+                          {member.role === 'ADMIN' ? '⚡ সুপার এডমিন' : member.role === 'MANAGER' ? '👑 ম্যানেজার' : '👤 মেম্বার'}
                         </span>
                       </div>
 
@@ -399,11 +434,12 @@ export default function MemberManager({
                         </div>
                       )}
 
-                      {/* Deposit info */}
-                      <div className="mt-2.5 flex items-center gap-2">
+                      {/* Deposit & Role Promotion Controls */}
+                      <div className="mt-2.5 flex items-center gap-2 flex-wrap">
                         <span className="text-xs text-slate-400">
                           জমা: <strong className="text-emerald-400 font-bold">{formatTaka(member.deposit)}</strong>
                         </span>
+                        
                         {isManager && (
                           <button
                             onClick={() => {
@@ -413,6 +449,40 @@ export default function MemberManager({
                             className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all"
                           >
                             <Edit3 className="w-2.5 h-2.5" /> টাকা আপডেট
+                          </button>
+                        )}
+
+                        {/* Manager Promotion & Demotion Buttons */}
+                        {isManager && member.role === 'MEMBER' && (
+                          <button
+                            disabled={actionLoadingId === member.id}
+                            onClick={() => handleChangeRole(member.id, member.name, 'MANAGER')}
+                            className="text-[10px] bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
+                            title="মেম্বারকে ম্যানেজার বানান"
+                          >
+                            <ShieldCheck className="w-2.5 h-2.5 text-amber-400" /> ম্যানেজার বানান
+                          </button>
+                        )}
+
+                        {isManager && member.role === 'MANAGER' && !isCurrentUser && (
+                          <button
+                            disabled={actionLoadingId === member.id}
+                            onClick={() => handleChangeRole(member.id, member.name, 'MEMBER')}
+                            className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
+                            title="ম্যানেজার পদ থেকে সাধারণ মেম্বার করুন"
+                          >
+                            <User className="w-2.5 h-2.5 text-slate-400" /> মেম্বার করুন
+                          </button>
+                        )}
+
+                        {isAdmin && member.role !== 'ADMIN' && (
+                          <button
+                            disabled={actionLoadingId === member.id}
+                            onClick={() => handleChangeRole(member.id, member.name, 'ADMIN')}
+                            className="text-[10px] bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
+                            title="এডমিন বানান"
+                          >
+                            <ShieldCheck className="w-2.5 h-2.5 text-purple-400" /> এডমিন বানান
                           </button>
                         )}
                       </div>
@@ -535,11 +605,12 @@ export default function MemberManager({
                 </label>
                 <select
                   value={role}
-                  onChange={(e) => setRole(e.target.value as 'MEMBER' | 'MANAGER')}
+                  onChange={(e) => setRole(e.target.value as 'MEMBER' | 'MANAGER' | 'ADMIN')}
                   className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
                 >
                   <option value="MEMBER">মেম্বার (সাধারণ সদস্য)</option>
-                  <option value="MANAGER">ম্যানেজার (সব নিয়ন্ত্রণের ক্ষমতা)</option>
+                  <option value="MANAGER">ম্যানেজার (মেস ম্যানেজার)</option>
+                  {isAdmin && <option value="ADMIN">সুপার এডমিন (ফুল কন্ট্রোল ও রিসেট ক্ষমতা)</option>}
                 </select>
               </div>
 

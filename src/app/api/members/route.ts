@@ -29,8 +29,8 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const currentUser = await getCurrentUser();
-    if (!currentUser || currentUser.role !== 'MANAGER') {
-      return NextResponse.json({ error: 'শুধুমাত্র ম্যানেজার এই পরিবর্তন করতে পারবেন' }, { status: 403 });
+    if (!currentUser || (currentUser.role !== 'MANAGER' && currentUser.role !== 'ADMIN')) {
+      return NextResponse.json({ error: 'শুধুমাত্র ম্যানেজার বা অ্যাডমিন এই পরিবর্তন করতে পারবেন' }, { status: 403 });
     }
 
     const { id, name, email, password, role, status, phone, deposit } = await req.json();
@@ -40,7 +40,12 @@ export async function POST(req: Request) {
       const updateData: any = {};
       if (name) updateData.name = name.trim();
       if (phone !== undefined) updateData.phone = phone ? phone.trim() : null;
-      if (role) updateData.role = role;
+      if (role) {
+        if (!['ADMIN', 'MANAGER', 'MEMBER'].includes(role)) {
+          return NextResponse.json({ error: 'সঠিক রোল নির্বাচন করুন' }, { status: 400 });
+        }
+        updateData.role = role;
+      }
       if (status) updateData.status = status;
       if (deposit !== undefined) updateData.deposit = Number(deposit);
       if (password && password.length >= 6) {
@@ -61,14 +66,25 @@ export async function POST(req: Request) {
         },
       });
 
+      let successMsg = 'মেম্বার তথ্য সফলভাবে আপডেট হয়েছে';
+      if (role && role === 'MANAGER') {
+        successMsg = `👑 "${updated.name}" কে সফলভাবে ম্যানেজার বানানো হয়েছে!`;
+      } else if (role && role === 'MEMBER') {
+        successMsg = `👤 "${updated.name}" কে সাধারণ মেম্বার করা হয়েছে।`;
+      } else if (role && role === 'ADMIN') {
+        successMsg = `⚡ "${updated.name}" কে সুপার অ্যাডমিন করা হয়েছে!`;
+      } else if (status === 'APPROVED') {
+        successMsg = `✅ "${updated.name}" মেম্বার সফলভাবে অনুমোদন করা হয়েছে`;
+      }
+
       return NextResponse.json({
         success: true,
-        message: status === 'APPROVED' ? 'মেম্বার সফলভাবে অনুমোদন করা হয়েছে' : 'মেম্বার তথ্য সফলভাবে আপডেট হয়েছে',
+        message: successMsg,
         member: updated,
       });
     }
 
-    // Creating a new member manually by manager
+    // Creating a new member manually by manager or admin
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'নাম, ইমেইল এবং পাসওয়ার্ড পূরণ করুন' }, { status: 400 });
     }
@@ -84,12 +100,14 @@ export async function POST(req: Request) {
 
     const hashedPassword = await hashPassword(password);
 
+    const validRole = ['ADMIN', 'MANAGER', 'MEMBER'].includes(role) ? role : 'MEMBER';
+
     const newMember = await prisma.user.create({
       data: {
         name: name.trim(),
         email: cleanEmail,
         password: hashedPassword,
-        role: role === 'MANAGER' ? 'MANAGER' : 'MEMBER',
+        role: validRole,
         status: status || 'APPROVED', // Manager-added members are automatically approved
         phone: phone ? phone.trim() : null,
         deposit: Number(deposit) || 0,
@@ -119,8 +137,8 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const currentUser = await getCurrentUser();
-    if (!currentUser || currentUser.role !== 'MANAGER') {
-      return NextResponse.json({ error: 'শুধুমাত্র ম্যানেজার মেম্বার ডিলিট করতে পারবেন' }, { status: 403 });
+    if (!currentUser || (currentUser.role !== 'MANAGER' && currentUser.role !== 'ADMIN')) {
+      return NextResponse.json({ error: 'শুধুমাত্র ম্যানেজার বা অ্যাডমিন মেম্বার ডিলিট করতে পারবেন' }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -131,7 +149,7 @@ export async function DELETE(req: Request) {
     }
 
     if (id === currentUser.id) {
-      return NextResponse.json({ error: 'ম্যানেজার নিজেকে ডিলিট করতে পারবেন না' }, { status: 400 });
+      return NextResponse.json({ error: 'আপনি নিজেকে ডিলিট করতে পারবেন না' }, { status: 400 });
     }
 
     await prisma.user.delete({

@@ -1,3 +1,30 @@
+const fs = require('fs');
+const path = require('path');
+
+// Auto-read .env file if present
+try {
+  const envPath = path.join(__dirname, '..', '.env');
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    envContent.split('\n').forEach((line) => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+        const [key, ...rest] = trimmed.split('=');
+        let val = rest.join('=').trim();
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
+        if (!process.env[key.trim()]) {
+          process.env[key.trim()] = val;
+        }
+      }
+    });
+  }
+} catch (e) {
+  // Ignore
+}
+
+function getValidDatabaseUrl() {
   const candidates = [
     process.env.DATABASE_URL,
     process.env.mess_PRISMA_DATABASE_URL,
@@ -48,18 +75,43 @@ async function main() {
   await prisma.bazar.deleteMany({});
   console.log('✔ All bazar records deleted.');
 
-  // 3. Delete all users except manager
+  // 3. Delete all users except admin and manager
   await prisma.user.deleteMany({
     where: {
       email: {
-        not: 'manager@mess.com',
+        notIn: ['admin@mess.com', 'manager@mess.com'],
       },
     },
   });
-  console.log('✔ All member accounts deleted.');
+  console.log('✔ All member accounts cleaned.');
 
-  // 4. Create or reset the default Manager account
+  // 4. Create or reset the default Admin and Manager accounts
   const passwordHash = await bcrypt.hash('123456', 10);
+
+  // Super Admin Account
+  await prisma.user.upsert({
+    where: { email: 'admin@mess.com' },
+    update: {
+      name: 'সুপার এডমিন (Super Admin)',
+      password: passwordHash,
+      role: 'ADMIN',
+      status: 'APPROVED',
+      phone: '01700000000',
+      deposit: 0,
+    },
+    create: {
+      name: 'সুপার এডমিন (Super Admin)',
+      email: 'admin@mess.com',
+      password: passwordHash,
+      role: 'ADMIN',
+      status: 'APPROVED',
+      phone: '01700000000',
+      deposit: 0,
+    },
+  });
+  console.log('✔ Super Admin account created/reset: admin@mess.com / 123456 (Role: ADMIN)');
+
+  // Manager Account
   await prisma.user.upsert({
     where: { email: 'manager@mess.com' },
     update: {
@@ -80,7 +132,7 @@ async function main() {
       deposit: 0,
     },
   });
-  console.log('✔ Manager account created/reset: manager@mess.com / 123456');
+  console.log('✔ Manager account created/reset: manager@mess.com / 123456 (Role: MANAGER)');
 
   // 5. Reset Mess Settings to clean state
   await prisma.messSettings.upsert({

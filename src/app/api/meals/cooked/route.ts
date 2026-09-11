@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const currentUser = await getCurrentUser();
-    if (!currentUser || currentUser.role !== 'MANAGER') {
-      return NextResponse.json({ error: 'শুধুমাত্র ম্যানেজার রান্না সম্পন্ন চিহ্নিত করতে পারবেন' }, { status: 403 });
+    if (!currentUser || (currentUser.role !== 'MANAGER' && currentUser.role !== 'ADMIN')) {
+      return NextResponse.json({ error: 'শুধুমাত্র ম্যানেজার বা অ্যাডমিন রান্না সম্পন্ন চিহ্নিত করতে পারবেন' }, { status: 403 });
     }
 
     const { date, mealType, isCooked = true } = await req.json();

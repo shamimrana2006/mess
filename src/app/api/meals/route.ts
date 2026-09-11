@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'তারিখ নির্বাচন করুন' }, { status: 400 });
     }
 
-    const isManager = currentUser.role === 'MANAGER';
+    const isManager = currentUser.role === 'MANAGER' || currentUser.role === 'ADMIN';
 
     // 1. Authorization: A member CANNOT edit another member's meal!
     if (!isManager && targetUserId && targetUserId !== currentUser.id) {

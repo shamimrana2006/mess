@@ -40,9 +40,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'অনুগ্রহ করে প্রথমে লগইন করুন' }, { status: 401 });
     }
 
-    // USER REQUIREMENT: Only manager can add or update bazar
-    if (currentUser.role !== 'MANAGER') {
-      return NextResponse.json({ error: 'শুধুমাত্র ম্যানেজার বাজার খরচ যোগ করতে পারবেন' }, { status: 403 });
+    // USER REQUIREMENT: Only manager or admin can add or update bazar
+    if (currentUser.role !== 'MANAGER' && currentUser.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'শুধুমাত্র ম্যানেজার বা অ্যাডমিন বাজার খরচ যোগ করতে পারবেন' }, { status: 403 });
     }
 
     const { targetUserId, date, amount, items, notes } = await req.json();
@@ -86,9 +86,9 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'লগইন প্রয়োজন' }, { status: 401 });
     }
 
-    // USER REQUIREMENT: Only manager can delete bazar
-    if (currentUser.role !== 'MANAGER') {
-      return NextResponse.json({ error: 'শুধুমাত্র ম্যানেজার বাজার খরচ মুছে ফেলতে পারবেন' }, { status: 403 });
+    // USER REQUIREMENT: Only manager or admin can delete bazar
+    if (currentUser.role !== 'MANAGER' && currentUser.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'শুধুমাত্র ম্যানেজার বা অ্যাডমিন বাজার খরচ মুছে ফেলতে পারবেন' }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);

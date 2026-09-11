@@ -1,4 +1,4 @@
-export type UserRole = 'MANAGER' | 'MEMBER';
+export type UserRole = 'ADMIN' | 'MANAGER' | 'MEMBER';
 export type UserStatus = 'APPROVED' | 'PENDING' | 'REJECTED';
 
 export interface UserSession {
