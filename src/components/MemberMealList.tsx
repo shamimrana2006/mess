@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Users, Phone, ShieldCheck, ArrowUpRight, ArrowDownRight, Sun, Moon } from 'lucide-react';
-import { toBanglaNumber, formatTaka } from '@/lib/utils';
+import { Users, Phone, ShieldCheck, ArrowUpRight, ArrowDownRight, Sun, Moon, MessageCircle } from 'lucide-react';
+import { toBanglaNumber, formatTaka, getWhatsAppLink } from '@/lib/utils';
 import { MemberSummary, UserSession } from '@/lib/types';
 
 interface MemberMealListProps {
@@ -143,10 +143,39 @@ export default function MemberMealList({
                   )}
                 </h3>
                 <p className="text-xs text-slate-400">{selectedMember.email}</p>
+                {selectedMember.phone ? (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <p className="text-xs text-emerald-300 flex items-center gap-1 font-mono">
+                      <Phone className="w-3 h-3 text-emerald-400" /> {selectedMember.phone}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-500 mt-0.5 italic">ফোন নম্বর যুক্ত নেই</p>
+                )}
+
+                {/* Direct WhatsApp & Call Buttons */}
                 {selectedMember.phone && (
-                  <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                    <Phone className="w-3 h-3 text-emerald-400" /> {selectedMember.phone}
-                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <a
+                      href={getWhatsAppLink(selectedMember.phone) || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-md shadow-emerald-600/30 active:scale-95 transition-all"
+                      title="হোয়াটসঅ্যাপে মেসেজ করুন"
+                    >
+                      <MessageCircle className="w-3 h-3" />
+                      <span>WhatsApp</span>
+                    </a>
+
+                    <a
+                      href={`tel:${selectedMember.phone}`}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold active:scale-95 transition-all"
+                      title="সরাসরি ফোন করুন"
+                    >
+                      <Phone className="w-2.5 h-2.5 text-emerald-400" />
+                      <span>কল</span>
+                    </a>
+                  </div>
                 )}
               </div>
             </div>

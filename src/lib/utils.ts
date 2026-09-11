@@ -66,3 +66,14 @@ export function getBanglaDayName(dayIndex: number): string {
   const daysBn = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি'];
   return daysBn[dayIndex] || '';
 }
+
+// Generate direct WhatsApp link
+export function getWhatsAppLink(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  let cleaned = phone.replace(/\D/g, '');
+  if (!cleaned) return null;
+  if (cleaned.startsWith('01')) {
+    cleaned = '88' + cleaned;
+  }
+  return `https://wa.me/${cleaned}`;
+}

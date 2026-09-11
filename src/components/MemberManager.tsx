@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Users, UserPlus, Trash2, Edit3, ShieldCheck, User, Phone, Wallet, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { toBanglaNumber, formatTaka } from '@/lib/utils';
+import { Users, UserPlus, Trash2, Edit3, ShieldCheck, User, Phone, Wallet, AlertCircle, CheckCircle2, MessageCircle } from 'lucide-react';
+import { toBanglaNumber, formatTaka, getWhatsAppLink } from '@/lib/utils';
 import { UserSession, MemberSummary } from '@/lib/types';
 
 interface MemberManagerProps {
@@ -278,9 +278,21 @@ export default function MemberManager({
                       </h4>
                       <p className="text-xs text-slate-400">{pending.email}</p>
                       {pending.phone && (
-                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                          <Phone className="w-3 h-3 text-emerald-400" /> {pending.phone}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-xs text-slate-300 flex items-center gap-1 font-mono">
+                            <Phone className="w-3 h-3 text-emerald-400" /> {pending.phone}
+                          </p>
+                          <a
+                            href={getWhatsAppLink(pending.phone) || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold shadow-sm active:scale-95 transition-all"
+                            title="হোয়াটসঅ্যাপে মেসেজ করুন"
+                          >
+                            <MessageCircle className="w-2.5 h-2.5" />
+                            <span>WhatsApp</span>
+                          </a>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -351,14 +363,44 @@ export default function MemberManager({
                       </div>
 
                       <p className="text-xs text-slate-400 mt-0.5">{member.email}</p>
+                      
+                      {/* Phone Number Display */}
+                      {member.phone ? (
+                        <div className="flex items-center gap-1.5 mt-1 text-xs font-mono text-emerald-300">
+                          <Phone className="w-3 h-3 text-emerald-400" />
+                          <span>{member.phone}</span>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-500 mt-1 italic">ফোন নম্বর দেওয়া নেই</p>
+                      )}
+
+                      {/* Direct WhatsApp & Call Buttons */}
                       {member.phone && (
-                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                          <Phone className="w-3 h-3 text-emerald-400" /> {member.phone}
-                        </p>
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <a
+                            href={getWhatsAppLink(member.phone) || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-md shadow-emerald-600/30 active:scale-95 transition-all"
+                            title="হোয়াটসঅ্যাপে মেসেজ করুন"
+                          >
+                            <MessageCircle className="w-3 h-3" />
+                            <span>WhatsApp</span>
+                          </a>
+
+                          <a
+                            href={`tel:${member.phone}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold active:scale-95 transition-all"
+                            title="সরাসরি ফোন করুন"
+                          >
+                            <Phone className="w-2.5 h-2.5 text-emerald-400" />
+                            <span>কল</span>
+                          </a>
+                        </div>
                       )}
 
                       {/* Deposit info */}
-                      <div className="mt-2 flex items-center gap-2">
+                      <div className="mt-2.5 flex items-center gap-2">
                         <span className="text-xs text-slate-400">
                           জমা: <strong className="text-emerald-400 font-bold">{formatTaka(member.deposit)}</strong>
                         </span>
