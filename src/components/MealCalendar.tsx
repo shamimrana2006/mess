@@ -82,12 +82,16 @@ export default function MealCalendar({
   const isManager = currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN';
 
   useEffect(() => {
-    if (!isManager && currentUser?.id) {
+    if (currentUser?.role === 'ADMIN') {
+      if ((!selectedUserId || selectedUserId === currentUser.id) && allMembers.length > 0) {
+        setSelectedUserId(allMembers[0].id);
+      }
+    } else if (!isManager && currentUser?.id) {
       setSelectedUserId(currentUser.id);
     } else if (isManager && currentUser?.id && !selectedUserId) {
       setSelectedUserId(currentUser.id);
     }
-  }, [currentUser, isManager, selectedUserId]);
+  }, [currentUser, isManager, selectedUserId, allMembers]);
 
   // Fetch meals and date-specific locks for the month
   const fetchMonthData = async () => {

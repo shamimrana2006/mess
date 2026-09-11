@@ -101,7 +101,8 @@ export default function DashboardPage() {
     );
   }
 
-  const isManager = currentUser?.role === 'MANAGER';
+  const isManager = currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN';
+  const isAdmin = currentUser?.role === 'ADMIN';
 
   return (
     <div className="min-h-screen max-w-md mx-auto flex flex-col">
@@ -116,7 +117,7 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="flex-1 px-4 py-4 space-y-4">
-        {/* 👑 মেসের আজকের মোট মিল (শুধুমাত্র ম্যানেজার দেখতে পারবে) */}
+        {/* 👑 মেসের আজকের মোট মিল (শুধুমাত্র ম্যানেজার ও এডমিন দেখতে পারবে) */}
         {isManager && dashboardData.todayMessMeals && (
           <div className="glass-card rounded-2xl p-3 border border-amber-500/30 bg-gradient-to-r from-amber-950/20 via-slate-900/90 to-slate-900/90 shadow-md">
             <div className="flex items-center justify-between mb-2">
@@ -148,7 +149,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 1. Manager Meal Lock & 'রান্না শেষ' Widget (Only for Manager) */}
+        {/* 1. Manager Meal Lock & 'রান্না শেষ' Widget (Only for Manager & Admin) */}
         {isManager && (
           <ManagerLockToggle
             isLunchLocked={dashboardData.settings.isLunchLocked}
@@ -158,14 +159,16 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* 2. Today's Quick Action Card (Lunch and Dinner) */}
-        <TodayQuickAction
-          user={currentUser}
-          isLunchLocked={dashboardData.settings.isLunchLocked}
-          isDinnerLocked={dashboardData.settings.isDinnerLocked}
-          todayCookedStatus={dashboardData.todayCookedStatus}
-          onMealUpdated={fetchDashboard}
-        />
+        {/* 2. Today's Quick Action Card (Lunch and Dinner) - ONLY FOR EATING MEMBERS & MANAGERS, NOT ADMIN */}
+        {!isAdmin && (
+          <TodayQuickAction
+            user={currentUser}
+            isLunchLocked={dashboardData.settings.isLunchLocked}
+            isDinnerLocked={dashboardData.settings.isDinnerLocked}
+            todayCookedStatus={dashboardData.todayCookedStatus}
+            onMealUpdated={fetchDashboard}
+          />
+        )}
 
         {/* 3. Dashboard Statistics Cards (Calculated based on Cooked Meals) */}
         <DashboardStats stats={dashboardData.stats} />

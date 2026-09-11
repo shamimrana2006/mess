@@ -41,9 +41,10 @@ export async function GET(req: Request) {
     const isTodayLunchLocked = Boolean(todayDailyLock?.isLunchLocked || settings.isLunchLocked);
     const isTodayDinnerLocked = Boolean(todayDailyLock?.isDinnerLocked || settings.isDinnerLocked);
 
-    // Get only APPROVED users (and managers)
+    // Get only APPROVED eating users (and managers) - EXCLUDING ADMIN!
     const users = await prisma.user.findMany({
       where: {
+        role: { not: 'ADMIN' },
         OR: [
           { status: 'APPROVED' },
           { role: 'MANAGER' },
@@ -62,23 +63,32 @@ export async function GET(req: Request) {
     });
 
     const pendingMembersCount = await prisma.user.count({
-      where: { status: 'PENDING' },
+      where: {
+        status: 'PENDING',
+        role: { not: 'ADMIN' },
+      },
     });
 
-    // Get all meals for this month
+    // Get all meals for this month (excluding admin users)
     const meals = await prisma.meal.findMany({
       where: {
         date: {
           startsWith: monthPrefix,
         },
+        user: {
+          role: { not: 'ADMIN' },
+        },
       },
     });
 
-    // Get all bazar records for this month
+    // Get all bazar records for this month (excluding admin users)
     const bazars = await prisma.bazar.findMany({
       where: {
         date: {
           startsWith: monthPrefix,
+        },
+        user: {
+          role: { not: 'ADMIN' },
         },
       },
     });

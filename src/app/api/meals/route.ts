@@ -12,7 +12,11 @@ export async function GET(req: Request) {
     const month = searchParams.get('month');
     const userId = searchParams.get('userId');
 
-    const whereClause: any = {};
+    const whereClause: any = {
+      user: {
+        role: { not: 'ADMIN' },
+      },
+    };
     if (date) whereClause.date = date;
     else if (month) whereClause.date = { startsWith: month };
     if (userId) whereClause.userId = userId;

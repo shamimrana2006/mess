@@ -19,8 +19,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'মিল টাইপ দিন (lunch অথবা dinner)' }, { status: 400 });
     }
 
-    // Get all users
-    const allUsers = await prisma.user.findMany({ select: { id: true } });
+    // Get all eating mess members (excluding admin)
+    const allUsers = await prisma.user.findMany({
+      where: { role: { not: 'ADMIN' } },
+      select: { id: true },
+    });
 
     // Update or create meal records for every user for this date
     for (const user of allUsers) {
