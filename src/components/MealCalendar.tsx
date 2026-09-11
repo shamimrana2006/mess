@@ -64,6 +64,8 @@ export default function MealCalendar({
     dinner: number;
     isLunchCooked?: boolean;
     isDinnerCooked?: boolean;
+    lunchUpdatedTime?: string | null;
+    dinnerUpdatedTime?: string | null;
     updatedTime?: string | null;
   }>({ lunch: 0, dinner: 0 });
   const [activeDayLock, setActiveDayLock] = useState<{ isLunchLocked: boolean; isDinnerLocked: boolean }>({
@@ -154,6 +156,8 @@ export default function MealCalendar({
             dinner: myMeal.dinner,
             isLunchCooked: Boolean(myMeal.isLunchCooked),
             isDinnerCooked: Boolean(myMeal.isDinnerCooked),
+            lunchUpdatedTime: myMeal.lunchUpdatedTime || (myMeal.lunch > 0 ? myMeal.updatedTime : null),
+            dinnerUpdatedTime: myMeal.dinnerUpdatedTime || (myMeal.dinner > 0 ? myMeal.updatedTime : null),
             updatedTime: myMeal.updatedTime,
           });
         } else {
@@ -162,6 +166,8 @@ export default function MealCalendar({
             dinner: 0,
             isLunchCooked: false,
             isDinnerCooked: false,
+            lunchUpdatedTime: null,
+            dinnerUpdatedTime: null,
             updatedTime: null,
           });
         }
@@ -751,86 +757,102 @@ export default function MealCalendar({
             {/* Meal Inputs: Lunch & Dinner */}
             <div className="space-y-3 mb-4">
               {/* Lunch */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200">
-                  <Sun className="w-4 h-4 text-amber-400" />
-                  <span>দুপুরের মিল</span>
-                  {activeMeal.isLunchCooked ? (
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-md font-semibold border border-emerald-500/30">রান্না শেষ</span>
-                  ) : isLunchLockedForDate(activeDateStr) ? (
-                    <Lock className="w-3.5 h-3.5 text-rose-400" />
-                  ) : null}
+              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200">
+                    <Sun className="w-4 h-4 text-amber-400" />
+                    <span>দুপুরের মিল</span>
+                    {activeMeal.isLunchCooked ? (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-md font-semibold border border-emerald-500/30">রান্না শেষ</span>
+                    ) : isLunchLockedForDate(activeDateStr) ? (
+                      <Lock className="w-3.5 h-3.5 text-rose-400" />
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={isLunchLockedForDate(activeDateStr) || activeMeal.lunch <= 0}
+                      onClick={() =>
+                        setActiveMeal((prev) => ({
+                          ...prev,
+                          lunch: Math.max(0, prev.lunch - 1),
+                        }))
+                      }
+                      className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-25 disabled:cursor-not-allowed flex items-center justify-center text-slate-200 border border-slate-700/60 active:scale-90 transition-all"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="w-10 text-center font-black text-lg text-white">
+                      {toBanglaNumber(activeMeal.lunch)}
+                    </span>
+                    <button
+                      disabled={isLunchLockedForDate(activeDateStr)}
+                      onClick={() =>
+                        setActiveMeal((prev) => ({
+                          ...prev,
+                          lunch: prev.lunch + 1,
+                        }))
+                      }
+                      className="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-25 disabled:cursor-not-allowed flex items-center justify-center text-white active:scale-90 transition-all shadow-md shadow-emerald-600/30 font-bold"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    disabled={isLunchLockedForDate(activeDateStr) || activeMeal.lunch <= 0}
-                    onClick={() =>
-                      setActiveMeal((prev) => ({
-                        ...prev,
-                        lunch: Math.max(0, prev.lunch - 1),
-                      }))
-                    }
-                    className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-25 disabled:cursor-not-allowed flex items-center justify-center text-slate-200 border border-slate-700/60 active:scale-90 transition-all"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="w-10 text-center font-black text-lg text-white">
-                    {toBanglaNumber(activeMeal.lunch)}
-                  </span>
-                  <button
-                    disabled={isLunchLockedForDate(activeDateStr)}
-                    onClick={() =>
-                      setActiveMeal((prev) => ({
-                        ...prev,
-                        lunch: prev.lunch + 1,
-                      }))
-                    }
-                    className="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-25 disabled:cursor-not-allowed flex items-center justify-center text-white active:scale-90 transition-all shadow-md shadow-emerald-600/30 font-bold"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
+
+                {/* Separate Lunch Timestamp */}
+                <div className="pt-1.5 border-t border-slate-800/80 flex items-center gap-1 text-[10px] text-slate-400">
+                  <Clock className="w-2.5 h-2.5 text-amber-400" />
+                  <span>দুপুর আপডেট: <strong className="text-slate-300">{activeMeal.lunchUpdatedTime || 'এখনো এন্ট্রি হয়নি'}</strong></span>
                 </div>
               </div>
 
               {/* Dinner */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200">
-                  <Moon className="w-4 h-4 text-blue-400" />
-                  <span>রাতের মিল</span>
-                  {activeMeal.isDinnerCooked ? (
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-md font-semibold border border-emerald-500/30">রান্না শেষ</span>
-                  ) : isDinnerLockedForDate(activeDateStr) ? (
-                    <Lock className="w-3.5 h-3.5 text-rose-400" />
-                  ) : null}
+              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200">
+                    <Moon className="w-4 h-4 text-blue-400" />
+                    <span>রাতের মিল</span>
+                    {activeMeal.isDinnerCooked ? (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-md font-semibold border border-emerald-500/30">রান্না শেষ</span>
+                    ) : isDinnerLockedForDate(activeDateStr) ? (
+                      <Lock className="w-3.5 h-3.5 text-rose-400" />
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={isDinnerLockedForDate(activeDateStr) || activeMeal.dinner <= 0}
+                      onClick={() =>
+                        setActiveMeal((prev) => ({
+                          ...prev,
+                          dinner: Math.max(0, prev.dinner - 1),
+                        }))
+                      }
+                      className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-25 disabled:cursor-not-allowed flex items-center justify-center text-slate-200 border border-slate-700/60 active:scale-90 transition-all"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="w-10 text-center font-black text-lg text-white">
+                      {toBanglaNumber(activeMeal.dinner)}
+                    </span>
+                    <button
+                      disabled={isDinnerLockedForDate(activeDateStr)}
+                      onClick={() =>
+                        setActiveMeal((prev) => ({
+                          ...prev,
+                          dinner: prev.dinner + 1,
+                        }))
+                      }
+                      className="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-25 disabled:cursor-not-allowed flex items-center justify-center text-white active:scale-90 transition-all shadow-md shadow-emerald-600/30 font-bold"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    disabled={isDinnerLockedForDate(activeDateStr) || activeMeal.dinner <= 0}
-                    onClick={() =>
-                      setActiveMeal((prev) => ({
-                        ...prev,
-                        dinner: Math.max(0, prev.dinner - 1),
-                      }))
-                    }
-                    className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-25 disabled:cursor-not-allowed flex items-center justify-center text-slate-200 border border-slate-700/60 active:scale-90 transition-all"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="w-10 text-center font-black text-lg text-white">
-                    {toBanglaNumber(activeMeal.dinner)}
-                  </span>
-                  <button
-                    disabled={isDinnerLockedForDate(activeDateStr)}
-                    onClick={() =>
-                      setActiveMeal((prev) => ({
-                        ...prev,
-                        dinner: prev.dinner + 1,
-                      }))
-                    }
-                    className="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-25 disabled:cursor-not-allowed flex items-center justify-center text-white active:scale-90 transition-all shadow-md shadow-emerald-600/30 font-bold"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
+
+                {/* Separate Dinner Timestamp */}
+                <div className="pt-1.5 border-t border-slate-800/80 flex items-center gap-1 text-[10px] text-slate-400">
+                  <Clock className="w-2.5 h-2.5 text-blue-400" />
+                  <span>রাত আপডেট: <strong className="text-slate-300">{activeMeal.dinnerUpdatedTime || 'এখনো এন্ট্রি হয়নি'}</strong></span>
                 </div>
               </div>
             </div>

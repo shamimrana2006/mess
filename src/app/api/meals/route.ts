@@ -145,7 +145,17 @@ export async function POST(req: Request) {
     }
 
     const total = finalLunch + finalDinner;
-    const updatedTime = getFormattedBanglaTimestamp();
+    const nowBangla = getFormattedBanglaTimestamp();
+
+    const isLunchChanged = lunch !== undefined && (!existingMeal || existingMeal.lunch !== finalLunch);
+    const isDinnerChanged = dinner !== undefined && (!existingMeal || existingMeal.dinner !== finalDinner);
+
+    const lunchUpdatedTime = isLunchChanged
+      ? nowBangla
+      : (existingMeal?.lunchUpdatedTime || (lunch !== undefined ? nowBangla : null));
+    const dinnerUpdatedTime = isDinnerChanged
+      ? nowBangla
+      : (existingMeal?.dinnerUpdatedTime || (dinner !== undefined ? nowBangla : null));
 
     const meal = await prisma.meal.upsert({
       where: {
@@ -159,7 +169,9 @@ export async function POST(req: Request) {
         lunch: finalLunch,
         dinner: finalDinner,
         total,
-        updatedTime,
+        lunchUpdatedTime,
+        dinnerUpdatedTime,
+        updatedTime: nowBangla,
       },
       create: {
         userId,
@@ -170,7 +182,9 @@ export async function POST(req: Request) {
         total,
         isLunchCooked: false,
         isDinnerCooked: false,
-        updatedTime,
+        lunchUpdatedTime,
+        dinnerUpdatedTime,
+        updatedTime: nowBangla,
       },
       include: {
         user: {

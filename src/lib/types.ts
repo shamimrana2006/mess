@@ -22,6 +22,8 @@ export interface MealRecord {
   total: number;
   isLunchCooked?: boolean;
   isDinnerCooked?: boolean;
+  lunchUpdatedTime?: string | null;
+  dinnerUpdatedTime?: string | null;
   updatedTime?: string | null;
   isLocked?: boolean;
 }

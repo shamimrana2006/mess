@@ -28,7 +28,8 @@ export default function TodayQuickAction({
   const [dinner, setDinner] = useState<number>(0);
   const [isLunchCooked, setIsLunchCooked] = useState<boolean>(false);
   const [isDinnerCooked, setIsDinnerCooked] = useState<boolean>(false);
-  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+  const [lunchSavedTime, setLunchSavedTime] = useState<string | null>(null);
+  const [dinnerSavedTime, setDinnerSavedTime] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -56,13 +57,15 @@ export default function TodayQuickAction({
           setDinner(m.dinner !== undefined ? m.dinner : 0);
           setIsLunchCooked(Boolean(m.isLunchCooked));
           setIsDinnerCooked(Boolean(m.isDinnerCooked));
-          setLastSavedTime(m.updatedTime || null);
+          setLunchSavedTime(m.lunchUpdatedTime || (m.lunch > 0 ? m.updatedTime : null));
+          setDinnerSavedTime(m.dinnerUpdatedTime || (m.dinner > 0 ? m.updatedTime : null));
         } else {
           setLunch(0);
           setDinner(0);
           setIsLunchCooked(false);
           setIsDinnerCooked(false);
-          setLastSavedTime(null);
+          setLunchSavedTime(null);
+          setDinnerSavedTime(null);
         }
       } catch (err) {
         console.error('Failed to load today meal', err);
@@ -74,7 +77,7 @@ export default function TodayQuickAction({
     fetchTodayMeal();
   }, [user, todayStr, todayCookedStatus]);
 
-  const handleSave = async (l = lunch, d = dinner) => {
+  const handleSave = async (l = lunch, d = dinner, updatedField?: 'lunch' | 'dinner') => {
     if (!user) return;
 
     try {
@@ -96,8 +99,13 @@ export default function TodayQuickAction({
         throw new Error(data.error || 'মিল সেভ ব্যর্থ হয়েছে');
       }
 
-      setLastSavedTime(data.meal?.updatedTime || 'এখনই');
-      setMessage({ text: '✅ আজকের মিল সংরক্ষিত হয়েছে!', type: 'success' });
+      if (data.meal) {
+        if (data.meal.lunchUpdatedTime) setLunchSavedTime(data.meal.lunchUpdatedTime);
+        if (data.meal.dinnerUpdatedTime) setDinnerSavedTime(data.meal.dinnerUpdatedTime);
+      }
+
+      const fieldBangla = updatedField === 'lunch' ? 'দুপুরের' : updatedField === 'dinner' ? 'রাতের' : 'আজকের';
+      setMessage({ text: `✅ ${fieldBangla} মিল সংরক্ষিত হয়েছে!`, type: 'success' });
       onMealUpdated();
 
       setTimeout(() => setMessage(null), 3000);
@@ -113,12 +121,12 @@ export default function TodayQuickAction({
       if (isLunchDisabled) return;
       const newVal = Math.max(0, lunch + delta);
       setLunch(newVal);
-      handleSave(newVal, dinner);
+      handleSave(newVal, dinner, 'lunch');
     } else {
       if (isDinnerDisabled) return;
       const newVal = Math.max(0, dinner + delta);
       setDinner(newVal);
-      handleSave(lunch, newVal);
+      handleSave(lunch, newVal, 'dinner');
     }
   };
 
@@ -144,15 +152,6 @@ export default function TodayQuickAction({
             </p>
           </div>
         </div>
-
-        {/* Timestamp */}
-        {lastSavedTime && (
-          <div className="text-right">
-            <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-slate-800/90 px-2.5 py-1 rounded-lg border border-slate-700/50">
-              <Clock className="w-3 h-3 text-emerald-400" /> {lastSavedTime}
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Warnings Banner if Cooked or Locked */}
@@ -230,6 +229,14 @@ export default function TodayQuickAction({
               <Plus className="w-4 h-4" />
             </button>
           </div>
+
+          {/* Lunch Separate Timestamp */}
+          <div className="mt-2.5 pt-2 border-t border-slate-800/80 w-full text-center">
+            <span className="inline-flex items-center gap-1 text-[10px] text-slate-400">
+              <Clock className="w-2.5 h-2.5 text-amber-400" />
+              {lunchSavedTime ? lunchSavedTime : 'এখনো এন্ট্রি হয়নি'}
+            </span>
+          </div>
         </div>
 
         {/* Dinner */}
@@ -275,6 +282,14 @@ export default function TodayQuickAction({
             >
               <Plus className="w-4 h-4" />
             </button>
+          </div>
+
+          {/* Dinner Separate Timestamp */}
+          <div className="mt-2.5 pt-2 border-t border-slate-800/80 w-full text-center">
+            <span className="inline-flex items-center gap-1 text-[10px] text-slate-400">
+              <Clock className="w-2.5 h-2.5 text-blue-400" />
+              {dinnerSavedTime ? dinnerSavedTime : 'এখনো এন্ট্রি হয়নি'}
+            </span>
           </div>
         </div>
       </div>

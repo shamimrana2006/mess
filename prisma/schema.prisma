@@ -32,12 +32,14 @@ model Meal {
   lunch         Float    @default(0)
   dinner        Float    @default(0)
   total         Float    @default(0)
-  isLunchCooked Boolean  @default(false) // দুপুরের রান্না সম্পন্ন
-  isDinnerCooked Boolean @default(false) // রাতের রান্না সম্পন্ন
-  updatedTime   String?  // Timestamp e.g. "11 Sep, 08:30 PM"
-  isLocked      Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  isLunchCooked    Boolean  @default(false) // দুপুরের রান্না সম্পন্ন
+  isDinnerCooked   Boolean  @default(false) // রাতের রান্না সম্পন্ন
+  lunchUpdatedTime String?  // Timestamp e.g. "11 Sep, 01:15 PM"
+  dinnerUpdatedTime String? // Timestamp e.g. "11 Sep, 08:30 PM"
+  updatedTime      String?  // General timestamp
+  isLocked         Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@unique([userId, date])
 }
