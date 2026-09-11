@@ -1,8 +1,9 @@
 const { execSync } = require('child_process');
 
-// Auto-detect Vercel Postgres environment variables
 const dbUrl =
   process.env.DATABASE_URL ||
+  process.env.mess_PRISMA_DATABASE_URL ||
+  process.env.mess_POSTGRES_URL ||
   process.env.POSTGRES_PRISMA_URL ||
   process.env.POSTGRES_URL ||
   process.env.POSTGRES_URL_NON_POOLING;

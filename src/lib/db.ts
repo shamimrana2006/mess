@@ -4,6 +4,8 @@ function getValidDatabaseUrl(): string | undefined {
   const env = process.env;
   const candidates = [
     env.DATABASE_URL,
+    env.mess_PRISMA_DATABASE_URL,
+    env.mess_POSTGRES_URL,
     env.POSTGRES_PRISMA_URL,
     env.POSTGRES_URL,
     env.POSTGRES_URL_NON_POOLING,
