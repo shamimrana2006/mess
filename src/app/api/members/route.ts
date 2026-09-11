@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUser, hashPassword } from '@/lib/auth';
+import { getBangladeshDateTime, getFormattedBanglaTimestamp } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -106,8 +107,8 @@ export async function POST(req: Request) {
     }
 
     const hashedPassword = await hashPassword(password);
-
     const validRole = ['ADMIN', 'MANAGER', 'MEMBER'].includes(role) ? role : 'MEMBER';
+    const numDeposit = Number(deposit) || 0;
 
     const newMember = await prisma.user.create({
       data: {
@@ -117,7 +118,7 @@ export async function POST(req: Request) {
         role: validRole,
         status: status || 'APPROVED', // Manager-added members are automatically approved
         phone: phone ? phone.trim() : null,
-        deposit: Number(deposit) || 0,
+        deposit: numDeposit,
       },
       select: {
         id: true,
@@ -129,6 +130,20 @@ export async function POST(req: Request) {
         deposit: true,
       },
     });
+
+    if (numDeposit > 0) {
+      const bdNow = getFormattedBanglaTimestamp();
+      const todayDateStr = getBangladeshDateTime().dateStr;
+      await prisma.deposit.create({
+        data: {
+          userId: newMember.id,
+          amount: numDeposit,
+          date: todayDateStr,
+          time: bdNow,
+          notes: 'প্রাথমিক জমা',
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,

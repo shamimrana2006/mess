@@ -43,6 +43,21 @@ export interface BazarRecord {
   createdAt: string;
 }
 
+export interface DepositRecord {
+  id: string;
+  userId: string;
+  user?: {
+    id: string;
+    name: string;
+    email?: string;
+  };
+  amount: number;
+  date: string;
+  time?: string | null;
+  notes?: string | null;
+  createdAt?: string;
+}
+
 export interface MemberSummary {
   id: string;
   name: string;

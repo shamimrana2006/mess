@@ -65,9 +65,15 @@ export async function POST(req: Request) {
         },
       });
 
+      await prisma.deposit.deleteMany({
+        where: {
+          date: { startsWith: month },
+        },
+      });
+
       return NextResponse.json({
         success: true,
-        message: `✅ ${month} মাসের সকল মিল ও বাজারের হিসাব সফলভাবে রিসেট করা হয়েছে!`,
+        message: `✅ ${month} মাসের সকল মিল, বাজার ও জমার হিসাব সফলভাবে রিসেট করা হয়েছে!`,
       });
     }
 
@@ -82,7 +88,10 @@ export async function POST(req: Request) {
       // 3. Delete all daily locks
       await prisma.dailyLock.deleteMany({});
 
-      // 4. Reset all users deposits to 0
+      // 4. Delete all deposits
+      await prisma.deposit.deleteMany({});
+
+      // 5. Reset all users deposits to 0
       await prisma.user.updateMany({
         data: {
           deposit: 0,

@@ -1,9 +1,24 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Users, UserPlus, Trash2, Edit3, ShieldCheck, User, Phone, Wallet, AlertCircle, CheckCircle2, MessageCircle } from 'lucide-react';
-import { toBanglaNumber, formatTaka, getWhatsAppLink } from '@/lib/utils';
-import { UserSession, MemberSummary } from '@/lib/types';
+import {
+  Users,
+  UserPlus,
+  Trash2,
+  ShieldCheck,
+  User,
+  Phone,
+  Wallet,
+  AlertCircle,
+  CheckCircle2,
+  MessageCircle,
+  Clock,
+  Calendar as CalendarIcon,
+  Plus,
+  FileText,
+} from 'lucide-react';
+import { toBanglaNumber, formatTaka, getWhatsAppLink, getBangladeshDateTime } from '@/lib/utils';
+import { UserSession, MemberSummary, DepositRecord } from '@/lib/types';
 
 interface MemberManagerProps {
   currentUser: UserSession | null;
@@ -33,10 +48,16 @@ export default function MemberManager({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Edit Deposit Modal
-  const [editMember, setEditMember] = useState<MemberSummary | null>(null);
-  const [newDeposit, setNewDeposit] = useState('');
-  const [isUpdatingDeposit, setIsUpdatingDeposit] = useState(false);
+  // Deposit History & Management Modal
+  const [depositModalMember, setDepositModalMember] = useState<MemberSummary | null>(null);
+  const [memberDeposits, setMemberDeposits] = useState<DepositRecord[]>([]);
+  const [isLoadingDeposits, setIsLoadingDeposits] = useState(false);
+  const [depositAmount, setDepositAmount] = useState('');
+  const [depositDate, setDepositDate] = useState(() => getBangladeshDateTime().dateStr);
+  const [depositNotes, setDepositNotes] = useState('');
+  const [isAddingDeposit, setIsAddingDeposit] = useState(false);
+  const [depositMessage, setDepositMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   // Fetch full user list for manager (including pending approvals)
@@ -163,34 +184,98 @@ export default function MemberManager({
     }
   };
 
-  const handleUpdateDeposit = async (e: React.FormEvent) => {
+  // Open Deposit History / Add Modal
+  const openDepositModal = async (member: MemberSummary) => {
+    setDepositModalMember(member);
+    setDepositAmount('');
+    setDepositDate(getBangladeshDateTime().dateStr);
+    setDepositNotes('');
+    setDepositMessage(null);
+    fetchMemberDeposits(member.id);
+  };
+
+  // Fetch deposits for a single member
+  const fetchMemberDeposits = async (userId: string) => {
+    try {
+      setIsLoadingDeposits(true);
+      const res = await fetch(`/api/deposits?userId=${userId}`);
+      const data = await res.json();
+      if (data.deposits) {
+        setMemberDeposits(data.deposits);
+      }
+    } catch (err) {
+      console.error('Failed to load deposits', err);
+    } finally {
+      setIsLoadingDeposits(false);
+    }
+  };
+
+  // Manager: Add a new deposit record with date, time, notes
+  const handleAddDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editMember) return;
+    if (!depositModalMember) return;
+
+    const amountNum = Number(depositAmount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      setDepositMessage({ text: 'সঠিক জমার পরিমাণ দিন', type: 'error' });
+      return;
+    }
 
     try {
-      setIsUpdatingDeposit(true);
-      const res = await fetch('/api/members', {
+      setIsAddingDeposit(true);
+      setDepositMessage(null);
+
+      const res = await fetch('/api/deposits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: editMember.id,
-          deposit: Number(newDeposit),
+          userId: depositModalMember.id,
+          amount: amountNum,
+          date: depositDate,
+          notes: depositNotes,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'জমা আপডেট করা যায়নি');
-        return;
+        throw new Error(data.error || 'জমা সেভ ব্যর্থ হয়েছে');
       }
 
-      setEditMember(null);
+      setDepositMessage({ text: data.message || '✅ জমা সফলভাবে সংরক্ষিত হয়েছে!', type: 'success' });
+      setDepositAmount('');
+      setDepositNotes('');
+
+      // Refresh deposits list and user list
+      fetchMemberDeposits(depositModalMember.id);
       fetchAllUsers();
       onRefresh();
-    } catch (err) {
-      alert('সমস্যা হয়েছে');
+
+      setTimeout(() => setDepositMessage(null), 3500);
+    } catch (err: any) {
+      setDepositMessage({ text: err.message || 'সমস্যা হয়েছে', type: 'error' });
     } finally {
-      setIsUpdatingDeposit(false);
+      setIsAddingDeposit(false);
+    }
+  };
+
+  // Manager: Delete a deposit record
+  const handleDeleteDeposit = async (depositId: string, amount: number) => {
+    if (!confirm(`আপনি কি এই ৳${amount} জমার এন্ট্রি মুছে ফেলতে চান?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/deposits?id=${depositId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'জমা ডিলিট ব্যর্থ হয়েছে');
+
+      if (depositModalMember) {
+        fetchMemberDeposits(depositModalMember.id);
+      }
+      fetchAllUsers();
+      onRefresh();
+    } catch (err: any) {
+      alert(err.message || 'সমস্যা হয়েছে');
     }
   };
 
@@ -226,7 +311,7 @@ export default function MemberManager({
               <Users className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-100">মেম্বার ব্যবস্থাপনা</h2>
+              <h2 className="text-sm font-bold text-slate-100">মেম্বার ব্যবস্থাপনা ও জমা হিসাব</h2>
               <p className="text-[11px] text-slate-400">
                 সক্রিয় সদস্য: <strong className="text-blue-300">{toBanglaNumber(approvedMembers.length)}</strong> জন
                 {pendingMembers.length > 0 && isManager && (
@@ -436,28 +521,24 @@ export default function MemberManager({
 
                       {/* Deposit & Role Promotion Controls */}
                       <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-                        <span className="text-xs text-slate-400">
-                          জমা: <strong className="text-emerald-400 font-bold">{formatTaka(member.deposit)}</strong>
-                        </span>
-                        
-                        {isManager && (
-                          <button
-                            onClick={() => {
-                              setEditMember(member);
-                              setNewDeposit(member.deposit.toString());
-                            }}
-                            className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all"
-                          >
-                            <Edit3 className="w-2.5 h-2.5" /> টাকা আপডেট
-                          </button>
-                        )}
+                        {/* Deposit History & Management Button */}
+                        <button
+                          onClick={() => openDepositModal(member)}
+                          className="text-xs bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-xl flex items-center gap-1.5 transition-all shadow-sm active:scale-95 font-semibold"
+                        >
+                          <Wallet className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>জমা: <strong>{formatTaka(member.deposit)}</strong></span>
+                          <span className="text-[10px] bg-emerald-500/20 text-emerald-200 px-1.5 py-0.2 rounded font-normal">
+                            {isManager ? '+ জমা/ইতিহাস' : 'ইতিহাস'}
+                          </span>
+                        </button>
 
                         {/* Manager Promotion & Demotion Buttons */}
                         {isManager && member.role === 'MEMBER' && (
                           <button
                             disabled={actionLoadingId === member.id}
                             onClick={() => handleChangeRole(member.id, member.name, 'MANAGER')}
-                            className="text-[10px] bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
+                            className="text-[10px] bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-xl flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50 font-semibold"
                             title="মেম্বারকে ম্যানেজার বানান"
                           >
                             <ShieldCheck className="w-2.5 h-2.5 text-amber-400" /> ম্যানেজার বানান
@@ -468,7 +549,7 @@ export default function MemberManager({
                           <button
                             disabled={actionLoadingId === member.id}
                             onClick={() => handleChangeRole(member.id, member.name, 'MEMBER')}
-                            className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
+                            className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-1 rounded-xl flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
                             title="ম্যানেজার পদ থেকে সাধারণ মেম্বার করুন"
                           >
                             <User className="w-2.5 h-2.5 text-slate-400" /> মেম্বার করুন
@@ -479,7 +560,7 @@ export default function MemberManager({
                           <button
                             disabled={actionLoadingId === member.id}
                             onClick={() => handleChangeRole(member.id, member.name, 'ADMIN')}
-                            className="text-[10px] bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
+                            className="text-[10px] bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 px-2 py-1 rounded-xl flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50 font-semibold"
                             title="এডমিন বানান"
                           >
                             <ShieldCheck className="w-2.5 h-2.5 text-purple-400" /> এডমিন বানান
@@ -642,58 +723,195 @@ export default function MemberManager({
         </div>
       )}
 
-      {/* Edit Deposit Modal */}
-      {editMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="glass-panel w-full max-w-sm rounded-3xl p-5 border border-emerald-500/30 shadow-2xl relative">
+      {/* 💳 Comprehensive Deposit History & Multiple Deposits Modal */}
+      {depositModalMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="glass-panel w-full max-w-md rounded-3xl p-5 border border-emerald-500/30 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4">
             <button
-              onClick={() => setEditMember(null)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center"
+              onClick={() => setDepositModalMember(null)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-all"
             >
               ✕
             </button>
 
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <Wallet className="w-4 h-4" />
+            {/* Modal Header */}
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 shrink-0">
+                <Wallet className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">জমা টাকা আপডেট</h3>
-                <p className="text-[11px] text-slate-400">{editMember.name}</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-white">{depositModalMember.name}</h3>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                    মোট জমা: {formatTaka(depositModalMember.deposit)}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">টাকা জমার বিস্তারিত ইতিহাস ও টাইমস্ট্যাম্প</p>
               </div>
             </div>
 
-            <form onSubmit={handleUpdateDeposit} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  মোট জমা টাকা (৳)
-                </label>
-                <input
-                  type="number"
-                  value={newDeposit}
-                  onChange={(e) => setNewDeposit(e.target.value)}
-                  className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
-                  required
-                />
+            {/* Manager Deposit Entry Form */}
+            {isManager ? (
+              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-950/30 via-slate-900/90 to-slate-900 border border-emerald-500/30 space-y-3 shadow-inner">
+                <h4 className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                  <Plus className="w-3.5 h-3.5" /> নতুন টাকা জমা এন্ট্রি করুন (ম্যানেজার)
+                </h4>
+
+                <form onSubmit={handleAddDeposit} className="space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                        জমার পরিমাণ (৳) *
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="যেমন: ১০০০"
+                        value={depositAmount}
+                        onChange={(e) => setDepositAmount(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                        required
+                        min="1"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                        জমার তারিখ
+                      </label>
+                      <input
+                        type="date"
+                        value={depositDate}
+                        onChange={(e) => setDepositDate(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                      পেমেন্ট বিবরণ / মাধ্যম (ঐচ্ছিক)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="যেমন: বিকাশ পার্সোনাল / নগদ / ক্যাশ"
+                      value={depositNotes}
+                      onChange={(e) => setDepositNotes(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                    />
+                  </div>
+
+                  {depositMessage && (
+                    <div
+                      className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 ${
+                        depositMessage.type === 'success'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                      }`}
+                    >
+                      {depositMessage.type === 'success' ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      )}
+                      <span>{depositMessage.text}</span>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isAddingDeposit}
+                    className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{isAddingDeposit ? 'জমা হচ্ছে...' : 'টাকা জমা নিশ্চিত করুন'}</span>
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-400">
+                ℹ️ টাকা জমা সংক্রান্ত যেকোনো এন্ট্রি বা পরিবর্তন শুধুমাত্র মেস ম্যানেজার করতে পারেন।
+              </div>
+            )}
+
+            {/* Deposit History Log List */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>জমার তালিকা ({toBanglaNumber(memberDeposits.length)} টি এন্ট্রি)</span>
+                </h4>
+                {memberDeposits.length > 0 && (
+                  <span className="text-[11px] text-slate-400">
+                    মোট: <strong className="text-emerald-300">{formatTaka(memberDeposits.reduce((acc, d) => acc + d.amount, 0))}</strong>
+                  </span>
+                )}
               </div>
 
-              <div className="flex items-center gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setEditMember(null)}
-                  className="w-1/3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUpdatingDeposit}
-                  className="w-2/3 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 disabled:opacity-50"
-                >
-                  {isUpdatingDeposit ? 'আপডেট হচ্ছে...' : 'সংরক্ষণ করুন'}
-                </button>
-              </div>
-            </form>
+              {isLoadingDeposits ? (
+                <div className="text-center py-6 text-xs text-slate-500">
+                  <span className="animate-pulse">জমার ইতিহাস লোড হচ্ছে...</span>
+                </div>
+              ) : memberDeposits.length === 0 ? (
+                <div className="p-5 rounded-2xl bg-slate-900/50 border border-slate-800/80 text-center text-xs text-slate-500 space-y-1">
+                  <Wallet className="w-6 h-6 mx-auto text-slate-600 opacity-60" />
+                  <p>এখনো কোনো জমার রেকর্ড নেই।</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {memberDeposits.map((dep) => (
+                    <div
+                      key={dep.id}
+                      className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 transition-all flex items-center justify-between gap-2"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-black text-emerald-300">
+                            + {formatTaka(dep.amount)}
+                          </span>
+                          {dep.notes && (
+                            <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md font-medium border border-slate-700/60">
+                              {dep.notes}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-400 flex-wrap">
+                          <span className="flex items-center gap-1">
+                            <CalendarIcon className="w-3 h-3 text-slate-500" /> {dep.date}
+                          </span>
+                          {dep.time && (
+                            <span className="flex items-center gap-1 text-emerald-400/90">
+                              <Clock className="w-3 h-3" /> {dep.time}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Manager Delete Individual Deposit */}
+                      {isManager && (
+                        <button
+                          onClick={() => handleDeleteDeposit(dep.id, dep.amount)}
+                          className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 flex items-center justify-center transition-all shrink-0"
+                          title="এই জমার এন্ট্রি মুছুন"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-slate-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setDepositModalMember(null)}
+                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all border border-slate-700/60"
+              >
+                বন্ধ করুন
+              </button>
+            </div>
           </div>
         </div>
       )}

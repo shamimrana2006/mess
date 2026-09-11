@@ -213,9 +213,9 @@ export default function MemberMealList({
 
             {/* Financial Details */}
             <div className="space-y-2 text-xs bg-slate-900/60 p-3 rounded-2xl border border-slate-800 mb-4">
-              <div className="flex justify-between">
-                <span className="text-slate-400">জমা দিয়েছেন:</span>
-                <strong className="text-white">{formatTaka(selectedMember.deposit)}</strong>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">মোট জমা দিয়েছেন:</span>
+                <strong className="text-emerald-300 font-bold text-sm">{formatTaka(selectedMember.deposit)}</strong>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">বাজার করেছেন:</span>
