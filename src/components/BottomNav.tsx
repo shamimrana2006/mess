@@ -10,14 +10,14 @@ export default function BottomNav() {
 
   const navItems = [
     {
-      label: 'হোম',
-      href: '/',
-      icon: LayoutDashboard,
-    },
-    {
       label: 'মিল ক্যালেন্ডার',
       href: '/calendar',
       icon: CalendarDays,
+    },
+    {
+      label: 'হিসাব ও সামারি',
+      href: '/dashboard',
+      icon: LayoutDashboard,
     },
     {
       label: 'বাজার হিসাব',
