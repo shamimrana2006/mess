@@ -6,7 +6,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const currentUser = await getCurrentUser();
+    const whereClause: any = {};
+    if (!currentUser || currentUser.role !== 'ADMIN') {
+      whereClause.role = { not: 'ADMIN' };
+    }
+
     const users = await prisma.user.findMany({
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
