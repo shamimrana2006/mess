@@ -214,19 +214,19 @@ export default function MemberMealList({
             {/* Financial Details */}
             <div className="space-y-2 text-xs bg-slate-900/60 p-3 rounded-2xl border border-slate-800 mb-4">
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">মোট জমা দিয়েছেন:</span>
+                <span className="text-slate-400">মোট জমা (তহবিলে):</span>
                 <strong className="text-emerald-300 font-bold text-sm">{formatTaka(selectedMember.deposit)}</strong>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">বাজার করেছেন:</span>
-                <strong className="text-white">{formatTaka(selectedMember.bazarContributed)}</strong>
-              </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-slate-400">মিল খরচ ({toBanglaNumber(selectedMember.totalMeals)} × {formatTaka(mealRate)}):</span>
                 <strong className="text-rose-300">{formatTaka(selectedMember.mealCost)}</strong>
               </div>
+              <div className="flex justify-between items-center text-[11px] text-slate-400 pt-0.5">
+                <span>বাজার করেছেন (মেসের টাকা দিয়ে):</span>
+                <span className="text-slate-300 font-medium">{formatTaka(selectedMember.bazarContributed)}</span>
+              </div>
               <div className="border-t border-slate-800 pt-2 flex justify-between font-bold text-sm">
-                <span>বর্তমান ব্যালেন্স:</span>
+                <span>ব্যালেন্স (জমা - মিল খরচ):</span>
                 <span className={selectedMember.netBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
                   {selectedMember.netBalance >= 0
                     ? `পাবে ${formatTaka(selectedMember.netBalance)}`

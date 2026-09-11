@@ -71,7 +71,7 @@ export interface MemberSummary {
   todayMeals: number;
   bazarContributed: number;
   mealCost: number;
-  netBalance: number; // deposit + bazarContributed - mealCost
+  netBalance: number; // deposit - mealCost (Bazar is spent from main mess fund)
   createdAt?: string;
   mealsCount: {
     lunch: number;
@@ -103,6 +103,7 @@ export interface MessDashboardData {
     totalBazarExpense: number;
     mealRate: number;
     totalDeposits: number;
+    remainingFund?: number; // Main fund cash remaining
     activeMembersCount: number;
     pendingMembersCount?: number;
   };

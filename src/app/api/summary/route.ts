@@ -125,7 +125,9 @@ export async function GET(req: Request) {
 
       const bazarContributed = userBazars.reduce((acc, b) => acc + b.amount, 0);
       const mealCost = userTotalCookedMeals * mealRate + fixedPerMember;
-      const netBalance = (user.deposit || 0) + bazarContributed - mealCost;
+      // CRITICAL: Bazar money is taken from the Mess Main Fund, NOT member's personal money.
+      // Therefore, bazar expense does NOT increase member's deposit or balance.
+      const netBalance = (user.deposit || 0) - mealCost;
 
       return {
         id: user.id,
@@ -162,6 +164,7 @@ export async function GET(req: Request) {
     }, 0);
 
     const totalDeposits = users.reduce((acc, u) => acc + (u.deposit || 0), 0);
+    const remainingFund = totalDeposits - totalBazarExpense - (settings.fixedCosts || 0);
 
     return NextResponse.json({
       settings: {
@@ -187,6 +190,7 @@ export async function GET(req: Request) {
         totalBazarExpense,
         mealRate,
         totalDeposits,
+        remainingFund,
         activeMembersCount: users.length,
         pendingMembersCount,
       },
