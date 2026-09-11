@@ -28,7 +28,9 @@ export async function POST(req: Request) {
 
     // Check if this is the first user in the system, make them Manager automatically
     const totalUsers = await prisma.user.count();
-    const assignedRole = totalUsers === 0 ? 'MANAGER' : (role === 'MANAGER' ? 'MANAGER' : 'MEMBER');
+    const isFirstUser = totalUsers === 0;
+    const assignedRole = isFirstUser ? 'MANAGER' : (role === 'MANAGER' ? 'MANAGER' : 'MEMBER');
+    const initialStatus = assignedRole === 'MANAGER' ? 'APPROVED' : 'PENDING';
 
     const hashedPassword = await hashPassword(password);
 
@@ -39,6 +41,7 @@ export async function POST(req: Request) {
         password: hashedPassword,
         phone: phone ? phone.trim() : null,
         role: assignedRole,
+        status: initialStatus,
         deposit: 0,
       },
     });
@@ -51,11 +54,16 @@ export async function POST(req: Request) {
 
     const response = NextResponse.json({
       success: true,
+      message:
+        initialStatus === 'PENDING'
+          ? 'রেজিস্ট্রেশন সফল হয়েছে! ম্যানেজার অনুমোদন করার পর আপনার মেম্বারশিপ সক্রিয় হবে।'
+          : 'ম্যানেজার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!',
       user: {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        status: newUser.status,
         phone: newUser.phone,
         deposit: newUser.deposit,
       },

@@ -7,12 +7,13 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const users = await prisma.user.findMany({
-      orderBy: { role: 'asc' },
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        status: true,
         phone: true,
         deposit: true,
         createdAt: true,
@@ -32,14 +33,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'শুধুমাত্র ম্যানেজার এই পরিবর্তন করতে পারবেন' }, { status: 403 });
     }
 
-    const { id, name, email, password, role, phone, deposit } = await req.json();
+    const { id, name, email, password, role, status, phone, deposit } = await req.json();
 
-    // If ID is provided, it's an update (e.g. deposit or role)
+    // If ID is provided, it's an update (e.g. deposit, role, or approval status)
     if (id) {
       const updateData: any = {};
       if (name) updateData.name = name.trim();
       if (phone !== undefined) updateData.phone = phone ? phone.trim() : null;
       if (role) updateData.role = role;
+      if (status) updateData.status = status;
       if (deposit !== undefined) updateData.deposit = Number(deposit);
       if (password && password.length >= 6) {
         updateData.password = await hashPassword(password);
@@ -53,6 +55,7 @@ export async function POST(req: Request) {
           name: true,
           email: true,
           role: true,
+          status: true,
           phone: true,
           deposit: true,
         },
@@ -60,12 +63,12 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         success: true,
-        message: 'মেম্বার তথ্য সফলভাবে আপডেট হয়েছে',
+        message: status === 'APPROVED' ? 'মেম্বার সফলভাবে অনুমোদন করা হয়েছে' : 'মেম্বার তথ্য সফলভাবে আপডেট হয়েছে',
         member: updated,
       });
     }
 
-    // Creating a new member
+    // Creating a new member manually by manager
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'নাম, ইমেইল এবং পাসওয়ার্ড পূরণ করুন' }, { status: 400 });
     }
@@ -87,6 +90,7 @@ export async function POST(req: Request) {
         email: cleanEmail,
         password: hashedPassword,
         role: role === 'MANAGER' ? 'MANAGER' : 'MEMBER',
+        status: status || 'APPROVED', // Manager-added members are automatically approved
         phone: phone ? phone.trim() : null,
         deposit: Number(deposit) || 0,
       },
@@ -95,6 +99,7 @@ export async function POST(req: Request) {
         name: true,
         email: true,
         role: true,
+        status: true,
         phone: true,
         deposit: true,
       },

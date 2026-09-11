@@ -13,10 +13,13 @@ interface MemberManagerProps {
 
 export default function MemberManager({
   currentUser,
-  members,
+  members: propMembers,
   onRefresh,
 }: MemberManagerProps) {
   const isManager = currentUser?.role === 'MANAGER';
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [activeTab, setActiveTab] = useState<'approved' | 'pending'>('approved');
 
   // Add Member Modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -33,6 +36,55 @@ export default function MemberManager({
   const [editMember, setEditMember] = useState<MemberSummary | null>(null);
   const [newDeposit, setNewDeposit] = useState('');
   const [isUpdatingDeposit, setIsUpdatingDeposit] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  // Fetch full user list for manager (including pending approvals)
+  const fetchAllUsers = async () => {
+    try {
+      setIsLoadingUsers(true);
+      const res = await fetch('/api/members');
+      const data = await res.json();
+      if (data.members) {
+        setAllUsers(data.members);
+      }
+    } catch (err) {
+      console.error('Failed to load members', err);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchAllUsers();
+  }, []);
+
+  const pendingMembers = allUsers.filter((u) => u.status === 'PENDING');
+  const approvedMembers = allUsers.length > 0 ? allUsers.filter((u) => u.status !== 'PENDING') : propMembers;
+
+  const handleApproveMember = async (id: string, memberName: string) => {
+    try {
+      setActionLoadingId(id);
+      const res = await fetch('/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          status: 'APPROVED',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'অনুমোদন ব্যর্থ হয়েছে');
+
+      alert(`✅ "${memberName}" কে সফলভাবে মেসের সদস্য হিসেবে অনুমোদন দেওয়া হয়েছে!`);
+      fetchAllUsers();
+      onRefresh();
+    } catch (err: any) {
+      alert(err.message || 'অনুমোদন করতে সমস্যা হয়েছে');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +106,7 @@ export default function MemberManager({
           password,
           phone,
           role,
+          status: 'APPROVED',
           deposit: Number(deposit) || 0,
         }),
       });
@@ -70,6 +123,7 @@ export default function MemberManager({
       setPhone('');
       setDeposit('0');
       setShowAddModal(false);
+      fetchAllUsers();
       onRefresh();
     } catch (err: any) {
       setFormError(err.message || 'সমস্যা হয়েছে');
@@ -100,6 +154,7 @@ export default function MemberManager({
       }
 
       setEditMember(null);
+      fetchAllUsers();
       onRefresh();
     } catch (err) {
       alert('সমস্যা হয়েছে');
@@ -109,20 +164,24 @@ export default function MemberManager({
   };
 
   const handleDeleteMember = async (id: string, memberName: string) => {
-    if (!confirm(`আপনি কি নিশ্চিত যে "${memberName}" কে মেস থেকে মুছে ফেলতে চান?`)) {
+    if (!confirm(`আপনি কি নিশ্চিত যে "${memberName}" কে মুছে ফেলতে চান?`)) {
       return;
     }
 
     try {
+      setActionLoadingId(id);
       const res = await fetch(`/api/members?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) {
         alert(data.error || 'মুছতে ব্যর্থ হয়েছে');
         return;
       }
+      fetchAllUsers();
       onRefresh();
     } catch (err) {
       alert('মেম্বার ডিলিট করতে সমস্যা হয়েছে');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -138,7 +197,12 @@ export default function MemberManager({
             <div>
               <h2 className="text-sm font-bold text-slate-100">মেম্বার ব্যবস্থাপনা</h2>
               <p className="text-[11px] text-slate-400">
-                মোট সদস্য: <strong className="text-blue-300">{toBanglaNumber(members.length)}</strong> জন
+                সক্রিয় সদস্য: <strong className="text-blue-300">{toBanglaNumber(approvedMembers.length)}</strong> জন
+                {pendingMembers.length > 0 && isManager && (
+                  <span className="ml-1 text-amber-400 font-bold">
+                    • রিকোয়েস্ট: {toBanglaNumber(pendingMembers.length)} জন
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -152,88 +216,183 @@ export default function MemberManager({
             </button>
           )}
         </div>
+
+        {/* Manager Tabs: Approved vs Pending */}
+        {isManager && (
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-800">
+            <button
+              onClick={() => setActiveTab('approved')}
+              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'approved'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                  : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              সক্রিয় মেম্বার ({toBanglaNumber(approvedMembers.length)})
+            </button>
+
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`flex-1 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                activeTab === 'pending'
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30 font-black'
+                  : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span>অনুমোদনের অপেক্ষায়</span>
+              {pendingMembers.length > 0 && (
+                <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] flex items-center justify-center animate-pulse">
+                  {toBanglaNumber(pendingMembers.length)}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Member Cards */}
-      <div className="space-y-2.5">
-        {members.map((member) => {
-          const isCurrentUser = currentUser?.id === member.id;
-
-          return (
-            <div
-              key={member.id}
-              className="glass-card rounded-2xl p-3.5 border border-slate-800 bg-slate-900/70"
-            >
-              <div className="flex items-start justify-between gap-2">
-                {/* Avatar & Details */}
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base shrink-0 ${
-                      member.role === 'MANAGER'
-                        ? 'bg-amber-500 text-slate-950'
-                        : 'bg-emerald-600 text-white'
-                    }`}
-                  >
-                    {member.name.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <h4 className="text-sm font-bold text-slate-100">
-                        {member.name}
-                      </h4>
-                      <span
-                        className={`text-[10px] font-semibold px-1.5 py-0.2 rounded-full inline-flex items-center gap-0.5 ${
-                          member.role === 'MANAGER'
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            : 'bg-slate-800 text-slate-300'
-                        }`}
-                      >
-                        {member.role === 'MANAGER' ? 'ম্যানেজার' : 'মেম্বার'}
-                      </span>
+      {/* PENDING APPROVAL TAB CONTENT */}
+      {isManager && activeTab === 'pending' && (
+        <div className="space-y-3">
+          {pendingMembers.length === 0 ? (
+            <div className="glass-card rounded-2xl p-6 text-center border border-slate-800 text-slate-400 text-xs">
+              <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-80" />
+              <p>কোনো নতুন মেম্বার অনুমোদনের অপেক্ষায় নেই।</p>
+            </div>
+          ) : (
+            pendingMembers.map((pending) => (
+              <div
+                key={pending.id}
+                className="glass-card rounded-2xl p-4 border border-amber-500/30 bg-gradient-to-r from-amber-950/20 via-slate-900/90 to-slate-900 space-y-3 shadow-lg"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 font-bold text-base flex items-center justify-center border border-amber-500/30">
+                      {pending.name.charAt(0)}
                     </div>
-
-                    <p className="text-xs text-slate-400 mt-0.5">{member.email}</p>
-                    {member.phone && (
-                      <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                        <Phone className="w-3 h-3 text-emerald-400" /> {member.phone}
-                      </p>
-                    )}
-
-                    {/* Deposit info */}
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="text-xs text-slate-400">
-                        জমা: <strong className="text-emerald-400 font-bold">{formatTaka(member.deposit)}</strong>
-                      </span>
-                      {isManager && (
-                        <button
-                          onClick={() => {
-                            setEditMember(member);
-                            setNewDeposit(member.deposit.toString());
-                          }}
-                          className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all"
-                        >
-                          <Edit3 className="w-2.5 h-2.5" /> টাকা আপডেট
-                        </button>
+                    <div>
+                      <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                        {pending.name}
+                        <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/30">
+                          অপেক্ষমাণ
+                        </span>
+                      </h4>
+                      <p className="text-xs text-slate-400">{pending.email}</p>
+                      {pending.phone && (
+                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                          <Phone className="w-3 h-3 text-emerald-400" /> {pending.phone}
+                        </p>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Manager Delete Button */}
-                {isManager && !isCurrentUser && (
+                <div className="flex items-center gap-2 pt-1">
                   <button
-                    onClick={() => handleDeleteMember(member.id, member.name)}
-                    className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 flex items-center justify-center transition-all shrink-0"
-                    title="মেম্বার ডিলিট করুন"
+                    disabled={actionLoadingId === pending.id}
+                    onClick={() => handleApproveMember(pending.id, pending.name)}
+                    className="flex-1 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-md shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-50"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{actionLoadingId === pending.id ? 'অনুমোদন হচ্ছে...' : 'অনুমোদন দিন'}</span>
                   </button>
-                )}
+
+                  <button
+                    disabled={actionLoadingId === pending.id}
+                    onClick={() => handleDeleteMember(pending.id, pending.name)}
+                    className="py-2 px-3 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-semibold text-xs flex items-center justify-center gap-1 active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>বাতিল</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* APPROVED ACTIVE MEMBERS TAB CONTENT */}
+      {(!isManager || activeTab === 'approved') && (
+        <div className="space-y-2.5">
+          {approvedMembers.map((member) => {
+            const isCurrentUser = currentUser?.id === member.id;
+
+            return (
+              <div
+                key={member.id}
+                className="glass-card rounded-2xl p-3.5 border border-slate-800 bg-slate-900/70"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  {/* Avatar & Details */}
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base shrink-0 ${
+                        member.role === 'MANAGER'
+                          ? 'bg-amber-500 text-slate-950'
+                          : 'bg-emerald-600 text-white'
+                      }`}
+                    >
+                      {member.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="text-sm font-bold text-slate-100">
+                          {member.name}
+                        </h4>
+                        <span
+                          className={`text-[10px] font-semibold px-1.5 py-0.2 rounded-full inline-flex items-center gap-0.5 ${
+                            member.role === 'MANAGER'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              : 'bg-slate-800 text-slate-300'
+                          }`}
+                        >
+                          {member.role === 'MANAGER' ? 'ম্যানেজার' : 'মেম্বার'}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-slate-400 mt-0.5">{member.email}</p>
+                      {member.phone && (
+                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                          <Phone className="w-3 h-3 text-emerald-400" /> {member.phone}
+                        </p>
+                      )}
+
+                      {/* Deposit info */}
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="text-xs text-slate-400">
+                          জমা: <strong className="text-emerald-400 font-bold">{formatTaka(member.deposit)}</strong>
+                        </span>
+                        {isManager && (
+                          <button
+                            onClick={() => {
+                              setEditMember(member);
+                              setNewDeposit(member.deposit.toString());
+                            }}
+                            className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all"
+                          >
+                            <Edit3 className="w-2.5 h-2.5" /> টাকা আপডেট
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Manager Delete Button */}
+                  {isManager && !isCurrentUser && (
+                    <button
+                      onClick={() => handleDeleteMember(member.id, member.name)}
+                      className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 flex items-center justify-center transition-all shrink-0"
+                      title="মেম্বার ডিলিট করুন"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Add Member Modal */}
       {showAddModal && (

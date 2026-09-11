@@ -50,6 +50,55 @@ export default function DashboardPage() {
     return <BanglaLoader message="নতুন মিল খোঁজা হচ্ছে ...." />;
   }
 
+  // If user is pending manager approval
+  if (currentUser && currentUser.status === 'PENDING' && currentUser.role !== 'MANAGER') {
+    return (
+      <div className="min-h-screen max-w-md mx-auto flex flex-col justify-center items-center px-4 py-8 text-center">
+        <div className="glass-card w-full rounded-3xl p-6 border border-amber-500/30 bg-gradient-to-b from-slate-900 via-slate-900/90 to-amber-950/20 shadow-2xl space-y-5 animate-fade-in">
+          <div className="w-16 h-16 rounded-3xl bg-amber-500/20 text-amber-400 mx-auto flex items-center justify-center border border-amber-500/30 shadow-lg shadow-amber-500/10">
+            <span className="text-3xl">⏳</span>
+          </div>
+
+          <div>
+            <span className="text-[11px] font-bold bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full border border-amber-500/30 uppercase tracking-wider">
+              অপেক্ষমাণ মেম্বার
+            </span>
+            <h2 className="text-lg font-black text-white mt-3">
+              অ্যাকাউন্টটি অনুমোদনের অপেক্ষায় রয়েছে
+            </h2>
+            <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+              প্রিয় <strong className="text-amber-300">{currentUser.name}</strong>, আপনার রেজিস্ট্রেশন সম্পন্ন হয়েছে। মেসের ম্যানেজার অনুমোদন (Approve) করলেই আপনি মেসের মিল ও হিসাব দেখতে পারবেন।
+            </p>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+            <p>মেসের নাম: <strong className="text-slate-200">{dashboardData.settings.messName}</strong></p>
+            <p>ইমেইল: <strong className="text-slate-200">{currentUser.email}</strong></p>
+          </div>
+
+          <div className="flex flex-col gap-2 pt-2">
+            <button
+              onClick={fetchDashboard}
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+            >
+              🔄 স্ট্যাটাস রিফ্রেশ করুন
+            </button>
+
+            <button
+              onClick={async () => {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                router.push('/login');
+              }}
+              className="w-full py-2.5 rounded-2xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold active:scale-95 transition-all"
+            >
+              🚪 লগআউট
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const isManager = currentUser?.role === 'MANAGER';
 
   return (

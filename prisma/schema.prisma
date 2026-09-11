@@ -13,6 +13,7 @@ model User {
   email     String   @unique
   password  String
   role      String   @default("MEMBER") // "MANAGER" or "MEMBER"
+  status    String   @default("PENDING") // "APPROVED", "PENDING", "REJECTED"
   phone     String?
   deposit   Float    @default(0)
   createdAt DateTime @default(now())

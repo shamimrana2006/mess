@@ -1,10 +1,12 @@
 export type UserRole = 'MANAGER' | 'MEMBER';
+export type UserStatus = 'APPROVED' | 'PENDING' | 'REJECTED';
 
 export interface UserSession {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  status: UserStatus;
   phone?: string | null;
   deposit: number;
 }
@@ -44,6 +46,7 @@ export interface MemberSummary {
   name: string;
   email: string;
   role: UserRole;
+  status: UserStatus;
   phone?: string | null;
   deposit: number;
   totalMeals: number; // Cooked meals only
@@ -52,6 +55,7 @@ export interface MemberSummary {
   bazarContributed: number;
   mealCost: number;
   netBalance: number; // deposit + bazarContributed - mealCost
+  createdAt?: string;
   mealsCount: {
     lunch: number;
     dinner: number;

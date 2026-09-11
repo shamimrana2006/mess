@@ -40,6 +40,7 @@ export async function POST(req: Request) {
         name: user.name,
         email: user.email,
         role: user.role,
+        status: user.status || 'PENDING',
         phone: user.phone,
         deposit: user.deposit,
       },

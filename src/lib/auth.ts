@@ -43,6 +43,7 @@ export async function getCurrentUser(): Promise<UserSession | null> {
         name: true,
         email: true,
         role: true,
+        status: true,
         phone: true,
         deposit: true,
       },
@@ -53,6 +54,7 @@ export async function getCurrentUser(): Promise<UserSession | null> {
     return {
       ...user,
       role: user.role as 'MANAGER' | 'MEMBER',
+      status: (user.status || 'PENDING') as 'APPROVED' | 'PENDING' | 'REJECTED',
     };
   } catch (err) {
     console.error('Error getting current user:', err);

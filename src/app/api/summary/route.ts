@@ -42,17 +42,28 @@ export async function GET(req: Request) {
     const isTodayLunchLocked = Boolean(todayDailyLock?.isLunchLocked || settings.isLunchLocked);
     const isTodayDinnerLocked = Boolean(todayDailyLock?.isDinnerLocked || settings.isDinnerLocked);
 
-    // Get all users
+    // Get only APPROVED users (and managers)
     const users = await prisma.user.findMany({
+      where: {
+        OR: [
+          { status: 'APPROVED' },
+          { role: 'MANAGER' },
+        ],
+      },
       orderBy: { role: 'asc' },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        status: true,
         phone: true,
         deposit: true,
       },
+    });
+
+    const pendingMembersCount = await prisma.user.count({
+      where: { status: 'PENDING' },
     });
 
     // Get all meals for this month
@@ -112,6 +123,7 @@ export async function GET(req: Request) {
         name: user.name,
         email: user.email,
         role: user.role,
+        status: user.status as 'APPROVED' | 'PENDING' | 'REJECTED',
         phone: user.phone,
         deposit: user.deposit || 0,
         totalMeals: userTotalCookedMeals, // Official Cooked Meals for rate & balances
@@ -160,6 +172,7 @@ export async function GET(req: Request) {
         mealRate,
         totalDeposits,
         activeMembersCount: users.length,
+        pendingMembersCount,
       },
       members: membersSummary,
       todayDate,

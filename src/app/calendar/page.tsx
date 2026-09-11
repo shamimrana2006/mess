@@ -22,6 +22,10 @@ export default function CalendarPage() {
         router.push('/login');
         return;
       }
+      if (userData.user.status === 'PENDING' && userData.user.role !== 'MANAGER') {
+        router.push('/');
+        return;
+      }
       setCurrentUser(userData.user);
 
       const summaryRes = await fetch('/api/summary');
