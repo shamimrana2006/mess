@@ -49,7 +49,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'অনুগ্রহ করে প্রথমে লগইন করুন' }, { status: 401 });
     }
 
-    const { targetUserId, date, lunch, dinner } = await req.json();
+    const { targetUserId, date, lunch, dinner, updatedField } = await req.json();
 
     if (!date) {
       return NextResponse.json({ error: 'তারিখ নির্বাচন করুন' }, { status: 400 });
@@ -147,15 +147,43 @@ export async function POST(req: Request) {
     const total = finalLunch + finalDinner;
     const nowBangla = getFormattedBanglaTimestamp();
 
-    const isLunchChanged = lunch !== undefined && (!existingMeal || existingMeal.lunch !== finalLunch);
-    const isDinnerChanged = dinner !== undefined && (!existingMeal || existingMeal.dinner !== finalDinner);
+    const prevLunch = existingMeal ? existingMeal.lunch : 0;
+    const prevDinner = existingMeal ? existingMeal.dinner : 0;
 
-    const lunchUpdatedTime = isLunchChanged
-      ? nowBangla
-      : (existingMeal?.lunchUpdatedTime || (lunch !== undefined ? nowBangla : null));
-    const dinnerUpdatedTime = isDinnerChanged
-      ? nowBangla
-      : (existingMeal?.dinnerUpdatedTime || (dinner !== undefined ? nowBangla : null));
+    // Detect if lunch or dinner was actually explicitly changed
+    let isLunchChanged = false;
+    let isDinnerChanged = false;
+
+    if (updatedField === 'lunch') {
+      isLunchChanged = true;
+    } else if (updatedField === 'dinner') {
+      isDinnerChanged = true;
+    } else {
+      if (lunch !== undefined) {
+        if (existingMeal) {
+          if (finalLunch !== prevLunch) isLunchChanged = true;
+        } else {
+          if (finalLunch > 0) isLunchChanged = true;
+        }
+      }
+      if (dinner !== undefined) {
+        if (existingMeal) {
+          if (finalDinner !== prevDinner) isDinnerChanged = true;
+        } else {
+          if (finalDinner > 0) isDinnerChanged = true;
+        }
+      }
+    }
+
+    let lunchUpdatedTime = existingMeal?.lunchUpdatedTime || null;
+    let dinnerUpdatedTime = existingMeal?.dinnerUpdatedTime || null;
+
+    if (isLunchChanged) {
+      lunchUpdatedTime = nowBangla;
+    }
+    if (isDinnerChanged) {
+      dinnerUpdatedTime = nowBangla;
+    }
 
     const meal = await prisma.meal.upsert({
       where: {

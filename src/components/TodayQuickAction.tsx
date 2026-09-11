@@ -91,6 +91,7 @@ export default function TodayQuickAction({
           date: todayStr,
           lunch: l,
           dinner: d,
+          updatedField,
         }),
       });
 
@@ -100,8 +101,8 @@ export default function TodayQuickAction({
       }
 
       if (data.meal) {
-        if (data.meal.lunchUpdatedTime) setLunchSavedTime(data.meal.lunchUpdatedTime);
-        if (data.meal.dinnerUpdatedTime) setDinnerSavedTime(data.meal.dinnerUpdatedTime);
+        setLunchSavedTime(data.meal.lunchUpdatedTime || null);
+        setDinnerSavedTime(data.meal.dinnerUpdatedTime || null);
       }
 
       const fieldBangla = updatedField === 'lunch' ? 'দুপুরের' : updatedField === 'dinner' ? 'রাতের' : 'আজকের';
