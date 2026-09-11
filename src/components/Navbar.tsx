@@ -37,7 +37,7 @@ export default function Navbar({
     <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-800/80 px-4 py-3">
       <div className="max-w-md mx-auto flex items-center justify-between gap-3">
         {/* Mess Title & Status */}
-        <Link href="/calendar" className="flex items-center gap-2.5 min-w-0">
+        <Link href="/" className="flex items-center gap-2.5 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-slate-950 font-black text-lg shrink-0">
             ম
           </div>

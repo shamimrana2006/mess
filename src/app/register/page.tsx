@@ -36,7 +36,7 @@ export default function RegisterPage() {
         throw new Error(data.error || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে');
       }
 
-      router.push('/calendar');
+      router.push('/');
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'সমস্যা হয়েছে');

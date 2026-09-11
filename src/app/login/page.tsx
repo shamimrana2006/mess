@@ -37,7 +37,7 @@ export default function LoginPage() {
         throw new Error(data.error || 'লগইন ব্যর্থ হয়েছে');
       }
 
-      router.push('/calendar');
+      router.push('/');
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'সমস্যা হয়েছে');
