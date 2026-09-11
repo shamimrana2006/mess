@@ -558,89 +558,39 @@ export default function MealCalendar({
               </h3>
             </div>
 
-            {/* 📊 মেসের মোট মিলের হিসাব (দুপুর ও রাত আলাদা আলাদা) */}
-            <div className="mb-4 p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-emerald-950/30 border border-emerald-500/30 space-y-3 shadow-lg">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                  <Flame className="w-3.5 h-3.5 text-amber-400" /> এই দিনের মেসের মোট মিল
-                </span>
-                <span className="text-xs bg-emerald-500/20 text-emerald-300 font-black px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                  মোট: {isLoadingDateMeals ? '...' : toBanglaNumber(dateMembersMeals.reduce((acc, m) => acc + (m.lunch || 0) + (m.dinner || 0), 0))} টি
-                </span>
-              </div>
-
-              {/* 2 Big Stat Boxes: Lunch and Dinner */}
-              <div className="grid grid-cols-2 gap-2.5 text-center">
-                {/* ☀️ সবার মোট দুপুরের মিল */}
-                <div className="bg-slate-900/90 p-2.5 rounded-2xl border border-amber-500/30 flex flex-col items-center">
-                  <span className="text-[11px] text-amber-300 font-bold flex items-center gap-1">
-                    <Sun className="w-3.5 h-3.5 text-amber-400" /> সবার মোট দুপুর
+            {/* 📊 ম্যানেজার অনলি: মেসের মোট দুপুর ও রাতের মিল (সিম্পল ও ছোট) */}
+            {isManager && (
+              <div className="mb-3 p-3 rounded-2xl bg-gradient-to-r from-amber-950/30 via-slate-900/90 to-slate-900/90 border border-amber-500/30 space-y-2 shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-300 flex items-center gap-1">
+                    <Flame className="w-3.5 h-3.5 text-amber-400" /> মেসের মোট মিল (সবার)
                   </span>
-                  <span className="text-2xl font-black text-white mt-1">
-                    {isLoadingDateMeals ? '...' : toBanglaNumber(dateMembersMeals.reduce((acc, m) => acc + (m.lunch || 0), 0))}
+                  <span className="text-[11px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/30">
+                    মোট: {isLoadingDateMeals ? '...' : toBanglaNumber(dateMembersMeals.reduce((acc, m) => acc + (m.lunch || 0) + (m.dinner || 0), 0))} টি
                   </span>
-                  <span className="text-[10px] text-slate-400 mt-0.5">টি মিল হবে</span>
                 </div>
 
-                {/* 🌙 সবার মোট রাতের মিল */}
-                <div className="bg-slate-900/90 p-2.5 rounded-2xl border border-blue-500/30 flex flex-col items-center">
-                  <span className="text-[11px] text-blue-300 font-bold flex items-center gap-1">
-                    <Moon className="w-3.5 h-3.5 text-blue-400" /> সবার মোট রাত
-                  </span>
-                  <span className="text-2xl font-black text-white mt-1">
-                    {isLoadingDateMeals ? '...' : toBanglaNumber(dateMembersMeals.reduce((acc, m) => acc + (m.dinner || 0), 0))}
-                  </span>
-                  <span className="text-[10px] text-slate-400 mt-0.5">টি মিল হবে</span>
-                </div>
-              </div>
-
-              {/* 👥 মেম্বারদের তালিকা (কে কয়টা মিল দিয়েছে) */}
-              {isManager && allMembers.length > 0 && (
-                <div className="pt-2 border-t border-slate-800">
-                  <div className="flex items-center justify-between mb-1.5 text-[11px] font-semibold text-slate-400">
-                    <span>মেম্বারের নাম (ক্লিক করে এডিট)</span>
-                    <span>দুপুর | রাত | মোট</span>
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="bg-slate-900/90 py-1.5 px-2.5 rounded-xl border border-amber-500/20 flex items-center justify-between">
+                    <span className="text-xs text-amber-300 font-bold flex items-center gap-1">
+                      <Sun className="w-3.5 h-3.5 text-amber-400" /> দুপুর
+                    </span>
+                    <span className="text-base font-black text-white">
+                      {isLoadingDateMeals ? '...' : toBanglaNumber(dateMembersMeals.reduce((acc, m) => acc + (m.lunch || 0), 0))} <span className="text-[10px] font-normal text-slate-400">টি</span>
+                    </span>
                   </div>
-                  <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
-                    {allMembers.map((member) => {
-                      const memberMeal = dateMembersMeals.find((m) => m.userId === member.id);
-                      const l = memberMeal?.lunch || 0;
-                      const d = memberMeal?.dinner || 0;
-                      const t = l + d;
-                      const isSelected = member.id === selectedUserId;
 
-                      return (
-                        <div
-                          key={member.id}
-                          onClick={() => {
-                            setSelectedUserId(member.id);
-                            setActiveMeal({
-                              lunch: l,
-                              dinner: d,
-                              isLunchCooked: Boolean(memberMeal?.isLunchCooked),
-                              isDinnerCooked: Boolean(memberMeal?.isDinnerCooked),
-                              updatedTime: memberMeal?.updatedTime || null,
-                            });
-                          }}
-                          className={`flex items-center justify-between p-2 rounded-xl text-xs transition-all cursor-pointer border ${
-                            isSelected
-                              ? 'bg-amber-500/20 border-amber-500/40 text-amber-200 shadow-sm'
-                              : 'bg-slate-900/60 hover:bg-slate-800 border-slate-800 text-slate-300'
-                          }`}
-                        >
-                          <span className="font-semibold truncate max-w-[130px]">
-                            {member.name} {isSelected && <span className="text-[10px] text-amber-400 font-bold ml-1">✓</span>}
-                          </span>
-                          <span className="font-mono text-xs">
-                            ☀️ <strong className="text-amber-300 font-bold">{toBanglaNumber(l)}</strong> | 🌙 <strong className="text-blue-300 font-bold">{toBanglaNumber(d)}</strong> = <strong className="text-emerald-400 font-black">{toBanglaNumber(t)}</strong>
-                          </span>
-                        </div>
-                      );
-                    })}
+                  <div className="bg-slate-900/90 py-1.5 px-2.5 rounded-xl border border-blue-500/20 flex items-center justify-between">
+                    <span className="text-xs text-blue-300 font-bold flex items-center gap-1">
+                      <Moon className="w-3.5 h-3.5 text-blue-400" /> রাত
+                    </span>
+                    <span className="text-base font-black text-white">
+                      {isLoadingDateMeals ? '...' : toBanglaNumber(dateMembersMeals.reduce((acc, m) => acc + (m.dinner || 0), 0))} <span className="text-[10px] font-normal text-slate-400">টি</span>
+                    </span>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* 👑 MANAGER SPECIFIC: PER-DATE LOCK & COOKED BUTTONS */}
             {isManager && (

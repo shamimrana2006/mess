@@ -144,6 +144,8 @@ export async function GET(req: Request) {
     const isTodayLunchCooked = todayMeals.length > 0 && todayMeals.some((m) => m.isLunchCooked);
     const isTodayDinnerCooked = todayMeals.length > 0 && todayMeals.some((m) => m.isDinnerCooked);
 
+    const todayTotalLunch = todayMeals.reduce((acc, m) => acc + (m.lunch || 0), 0);
+    const todayTotalDinner = todayMeals.reduce((acc, m) => acc + (m.dinner || 0), 0);
     const todayTotalCookedMeals = todayMeals.reduce((acc, m) => {
       const l = m.isLunchCooked ? m.lunch : 0;
       const d = m.isDinnerCooked ? m.dinner : 0;
@@ -164,6 +166,11 @@ export async function GET(req: Request) {
       todayCookedStatus: {
         isLunchCooked: isTodayLunchCooked,
         isDinnerCooked: isTodayDinnerCooked,
+      },
+      todayMessMeals: {
+        lunch: todayTotalLunch,
+        dinner: todayTotalDinner,
+        total: todayTotalLunch + todayTotalDinner,
       },
       stats: {
         totalMessMeals: totalMessCookedMeals, // Ranna hoye geche emon mill

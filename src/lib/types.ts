@@ -75,6 +75,11 @@ export interface MessDashboardData {
     isLunchCooked: boolean;
     isDinnerCooked: boolean;
   };
+  todayMessMeals?: {
+    lunch: number;
+    dinner: number;
+    total: number;
+  };
   stats: {
     totalMessMeals: number; // Only cooked meals
     todayTotalMeals: number;
@@ -82,6 +87,7 @@ export interface MessDashboardData {
     mealRate: number;
     totalDeposits: number;
     activeMembersCount: number;
+    pendingMembersCount?: number;
   };
   members: MemberSummary[];
   todayDate: string;

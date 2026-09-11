@@ -9,6 +9,8 @@ import DashboardStats from '@/components/DashboardStats';
 import TodayQuickAction from '@/components/TodayQuickAction';
 import MemberMealList from '@/components/MemberMealList';
 import ManagerLockToggle from '@/components/ManagerLockToggle';
+import { Sun, Moon, Flame } from 'lucide-react';
+import { toBanglaNumber } from '@/lib/utils';
 import { UserSession, MessDashboardData } from '@/lib/types';
 
 export default function DashboardPage() {
@@ -114,6 +116,38 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="flex-1 px-4 py-4 space-y-4">
+        {/* 👑 মেসের আজকের মোট মিল (শুধুমাত্র ম্যানেজার দেখতে পারবে) */}
+        {isManager && dashboardData.todayMessMeals && (
+          <div className="glass-card rounded-2xl p-3 border border-amber-500/30 bg-gradient-to-r from-amber-950/20 via-slate-900/90 to-slate-900/90 shadow-md">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-amber-400" /> আজকের মেসের মোট মিল
+              </span>
+              <span className="text-[11px] bg-amber-500/20 text-amber-300 font-black px-2 py-0.5 rounded-full border border-amber-500/30">
+                মোট: {toBanglaNumber(dashboardData.todayMessMeals.total)} টি
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className="bg-slate-900/90 py-1.5 px-2.5 rounded-xl border border-amber-500/20 flex items-center justify-between">
+                <span className="text-xs text-amber-300 font-bold flex items-center gap-1">
+                  <Sun className="w-3.5 h-3.5 text-amber-400" /> দুপুর
+                </span>
+                <span className="text-base font-black text-white">
+                  {toBanglaNumber(dashboardData.todayMessMeals.lunch)} <span className="text-[10px] font-normal text-slate-400">টি</span>
+                </span>
+              </div>
+              <div className="bg-slate-900/90 py-1.5 px-2.5 rounded-xl border border-blue-500/20 flex items-center justify-between">
+                <span className="text-xs text-blue-300 font-bold flex items-center gap-1">
+                  <Moon className="w-3.5 h-3.5 text-blue-400" /> রাত
+                </span>
+                <span className="text-base font-black text-white">
+                  {toBanglaNumber(dashboardData.todayMessMeals.dinner)} <span className="text-[10px] font-normal text-slate-400">টি</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 1. Manager Meal Lock & 'রান্না শেষ' Widget (Only for Manager) */}
         {isManager && (
           <ManagerLockToggle
